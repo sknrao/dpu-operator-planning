@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>OPI NVIDIA parity — plan</title>
+<style>
+  :root {
+    --bg: #1a1a1e;
+    --bg-elevated: #232328;
+    --text-primary: #e8e8ea;
+    --text-secondary: #a8a8b0;
+    --text-tertiary: #7a7a82;
+    --stroke: #34343c;
+    --stroke-secondary: #2a2a30;
+    --accent: #4fa8ff;
+    --success: #3fb968;
+    --warning: #d9a441;
+    --danger: #e5534b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 40px 24px 80px;
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 26px; font-weight: 700; margin: 0 0 8px; }
+  h2 { font-size: 19px; font-weight: 700; margin: 0 0 8px; }
+  h3 { font-size: 15px; font-weight: 650; margin: 22px 0 8px; }
+  p { margin: 0 0 10px; color: var(--text-secondary); font-size: 14px; }
+  section { margin-top: 36px; }
+  .lede { max-width: 920px; }
+  .meta { color: var(--text-tertiary); font-size: 12.5px; margin-bottom: 14px; }
+  strong { color: var(--text-primary); font-weight: 600; }
+  code { background: var(--bg-elevated); border: 1px solid var(--stroke-secondary); border-radius: 4px; padding: 1px 5px; font-size: 12.5px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; color: var(--text-primary); }
+  a { color: var(--accent); text-decoration: none; }
+  ul, ol { margin: 6px 0 12px; padding-left: 22px; color: var(--text-secondary); font-size: 14px; }
+  li { margin: 4px 0; }
+  li strong { color: var(--text-primary); }
+
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px; }
+  th, td { text-align: left; vertical-align: top; padding: 8px 10px; border-bottom: 1px solid var(--stroke-secondary); }
+  th { color: var(--text-tertiary); font-size: 11.5px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; }
+  td { color: var(--text-secondary); }
+  td:first-child { color: var(--text-primary); }
+
+  .card-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 14px; }
+  .card { border: 1px solid var(--stroke-secondary); border-radius: 10px; background: var(--bg-elevated); overflow: hidden; }
+  .card-header { padding: 10px 14px; border-bottom: 1px solid var(--stroke-secondary); font-size: 13px; font-weight: 650; }
+  .card-body { padding: 12px 14px; font-size: 13px; color: var(--text-secondary); }
+  .card-body p:last-child { margin-bottom: 0; }
+  .where { display: block; margin-top: 8px; color: var(--text-tertiary); font-size: 12px; }
+
+  .flows { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .flow { border: 1px solid var(--stroke-secondary); border-radius: 10px; background: var(--bg-elevated); padding: 14px 14px 6px; }
+  .flow h3 { margin: 0 0 4px; }
+  .flow .sub { color: var(--text-tertiary); font-size: 12.5px; margin: 0 0 12px; }
+  .step { display: grid; grid-template-columns: 28px 1fr; gap: 8px; margin-bottom: 10px; }
+  .num { width: 22px; height: 22px; border-radius: 999px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; background: var(--stroke); color: var(--text-primary); }
+  .flow.target .num { background: rgba(63,185,104,0.2); color: var(--success); }
+  .step p { margin: 0; font-size: 13px; }
+  .who { font-size: 11px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase; }
+  .who.user { color: var(--text-tertiary); }
+  .who.opi { color: var(--accent); }
+  .who.adp { color: var(--warning); }
+  .who.vsp { color: #c084fc; }
+  .who.trl { color: #f0a070; }
+  .who.dpf { color: var(--success); }
+
+  .callout { border: 1px solid var(--stroke); border-left: 3px solid var(--warning); border-radius: 8px; padding: 10px 14px; margin-top: 12px; background: var(--bg-elevated); }
+  .callout p { margin: 0; font-size: 13px; }
+  .callout.ok { border-left-color: var(--success); }
+  .pill { display: inline-block; font-size: 11px; font-weight: 650; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--stroke); }
+  .pill.up { color: var(--accent); border-color: rgba(79,168,255,0.45); }
+  .pill.ad { color: var(--warning); border-color: rgba(217,164,65,0.45); }
+  pre { background: var(--bg-elevated); border: 1px solid var(--stroke-secondary); border-radius: 8px; padding: 12px 14px; overflow-x: auto; font-size: 12.5px; line-height: 1.45; }
+  .toc { margin: 16px 0 0; padding: 0; list-style: none; }
+  .toc li { margin: 3px 0; font-size: 13.5px; }
+  @media (max-width: 860px) {
+    .card-grid, .flows { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>OPI NVIDIA parity plan</h1>
+<p class="meta">Working plan, 16 Nov 2026. Assumes dpu-operator PRs 7 (vendor provider) and 8 (Helm chart on a network function) are merged. Supersedes the earlier milestone split wherever the two disagree; the differences are listed at the end.</p>
+<p class="lede">NVIDIA should present the same user path as Intel and Marvell: label a host, apply <code>DpuOperatorConfig</code>, attach pods with the existing OPI CNI, and apply a <code>ServiceFunctionChain</code>. DPF stays unmodified. The adapter turns each OPI request into a DPF object, and DPF's own controllers do the work on the BlueField. The user never writes a DPF object.</p>
+
+<ul class="toc">
+  <li><a href="#terms">1. The three names</a></li>
+  <li><a href="#flows">2. Flow now and target flow</a></li>
+  <li><a href="#decisions">3. Decisions already made</a></li>
+  <li><a href="#findings">4. Findings that shape the plan</a></li>
+  <li><a href="#calls">5. How each daemon call maps onto DPF</a></li>
+  <li><a href="#split">6. What changes where</a></li>
+  <li><a href="#work">7. Adapter work, in build order</a></li>
+  <li><a href="#spikes">8. Spikes to run before coding</a></li>
+  <li><a href="#done">9. Done when</a></li>
+  <li><a href="#delta">10. What changed from the earlier write-up</a></li>
+</ul>
+
+<section id="terms">
+<h2>1. The three names</h2>
+<p>They are one product and two processes inside it. "Adapter translator" is a controller inside the manager, and it is a separate binary from the VSP.</p>
+
+<div class="card-grid">
+  <div class="card">
+    <div class="card-header">Adapter</div>
+    <div class="card-body">
+      <p>The whole companion, repo <code>opi-nvidia-dpf-adapter</code>. It owns no OPI API and no DPF API. It watches OPI objects and writes DPF objects, and it installs the pinned DPF operator.</p>
+      <p>Today it ships as one image with two long-running processes: the <strong>manager</strong> (one cluster Deployment) and the <strong>VSP</strong> (one pod per BlueField host). A third binary, <code>opi-daemon</code>, is a stand-in for the real daemon and goes away.</p>
+      <span class="where">Deployed in <code>opi-nvidia-dpf-adapter-system</code>. PR 7 can deploy the manager from <code>dpu-operator</code> when <code>vendor=nvidia</code>.</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Adapter VSP</div>
+    <div class="card-body">
+      <p>The node process, <code>cmd/vsp</code>. It is the vendor plugin the <code>dpu-daemon</code> dials on <code>/var/run/dpu-daemon/vendor-plugin/vendor-plugin.sock</code>. Intel and Marvell have the same kind of plugin; theirs programs the card directly.</p>
+      <p>Today it discovers the BlueField and writes identity annotations on the <code>DataProcessingUnit</code>. In the target it also answers <code>Init</code>, <code>GetDevices</code>, <code>SetNumVfs</code>, <code>CreateBridgePort</code>, <code>DeleteBridgePort</code>, and the OPI heartbeat.</p>
+      <span class="where">Runs on the host, one pod per node. Talks gRPC to the daemon and writes a few DPF objects.</span>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-header">Adapter translator</div>
+    <div class="card-body">
+      <p>The controllers inside the manager, <code>pkg/translation</code>, driven by the FieldMapping YAML in <code>config/mappings</code>. One reconciler per mapping. It watches an OPI object and server-side-applies the DPF objects that mapping lists.</p>
+      <p>It does not speak gRPC and it does not run on the node. The <strong>lifecycle manager</strong> is its sibling in the same process: that one Helm-installs DPF and registers <code>VendorProvider/nvidia</code>. When this plan says "the translator", it means the mapping controllers.</p>
+      <span class="where">Runs in the manager Deployment. Cluster scoped. Writes DPF provisioning objects, chains, and <code>DPUService</code>.</span>
+    </div>
+  </div>
+</div>
+
+<p style="margin-top:14px">A request crosses them in this order. The daemon calls the VSP. The VSP either answers from the node (device list, heartbeat) or writes one <code>DPUServiceInterface</code>. The translator, watching OPI objects from the manager, keeps the DPF chains and the provisioning objects in line. DPF's own controllers then program the card and <code>br-sfc</code>.</p>
+</section>
+
+<section id="flows">
+<h2>2. Flow now and target flow</h2>
+<p>Flow now is how the lab actually runs today. The operator and the adapter were installed separately, and the operator's daemon is not on the BlueField host. The target is the revised lifecycle: the adapter is loaded first, and it owns everything that knows about DPF.</p>
+
+<div class="flows">
+  <div class="flow">
+    <h3>Flow now</h3>
+    <p class="sub">Two separate installs. No OPI data path. DPF objects for traffic are applied by hand.</p>
+
+    <div class="step"><div class="num">1</div><p><span class="who user">Person</span><br>Installs <code>dpu-operator</code> with the lab script into <code>openshift-dpu-operator</code>, and installs the adapter separately with <code>make deploy</code>.</p></div>
+    <div class="step"><div class="num">2</div><p><span class="who adp">Adapter manager</span><br>Starts translator and lifecycle manager. Registers <code>VendorProvider/nvidia</code> as Available. Lifecycle manager installs or adopts DPF. Because the provider is already Available, PR 7's "deploy the adapter" step does nothing.</p></div>
+    <div class="step"><div class="num">3</div><p><span class="who vsp">Adapter VSP</span><br>DaemonSet runs on the NFD label <code>hardware.opiproject.org/profile=nvidia-bluefield</code>. It annotates identity. It does not serve BridgePort, and its heartbeat is on the wrong gRPC service for the real daemon.</p></div>
+    <div class="step"><div class="num">4</div><p><span class="who opi">dpu-operator</span><br><code>dpu-daemon</code> DaemonSet stays at 0 pods. No node has the <code>dpu=true</code> label it selects on. Detection, the device plugin, and the CNI server never start on this host.</p></div>
+    <div class="step"><div class="num">5</div><p><span class="who user">Person</span><br>Applies the <code>DataProcessingUnit</code> by hand. The VSP stamps serial, PCI address, and product name onto it.</p></div>
+    <div class="step"><div class="num">6</div><p><span class="who trl">Translator</span><br>Emits <code>DPUDevice</code>, <code>DPUFlavor</code>, <code>BFB</code>, and <code>DPU</code> for a BlueField-3.</p></div>
+    <div class="step"><div class="num">7</div><p><span class="who dpf">DPF, unmodified</span><br>Flashes the card, joins the Kamaji tenant, creates the host VFs from <code>NUM_OF_VFS</code>. VF0 is the host-to-DPU management channel.</p></div>
+    <div class="step"><div class="num">8</div><p><span class="who trl">Translator</span><br>Sets <code>DPFReady</code>. Nothing sets the OPI <code>Ready</code> condition, because the daemon is absent. The <code>opi-daemon</code> shim can write it, which is why that shim has to go.</p></div>
+    <div class="step"><div class="num">9</div><p><span class="who user">Person</span><br>Applies <code>DPUServiceInterface</code> and <code>DPUServiceChain</code> by hand (the lab VF/SF samples). DPF's sfc-controller programs <code>br-sfc</code>. Traffic works. The OPI CNI is not in this path.</p></div>
+  </div>
+
+  <div class="flow target">
+    <h3>Target flow</h3>
+    <p class="sub">Same user steps as Intel and Marvell. The adapter is loaded before any card is detected.</p>
+
+    <div class="step"><div class="num">1</div><p><span class="who user">User</span><br>Installs <code>dpu-operator</code> and applies <code>DpuOperatorConfig</code> with <code>vendor=nvidia</code>.</p></div>
+    <div class="step"><div class="num">2</div><p><span class="who opi">dpu-operator</span><br>Deploys the adapter manager (PR 7) when <code>VendorProvider/nvidia</code> is not yet Available. This happens before detection. An adapter already installed out of tree is left alone.</p></div>
+    <div class="step"><div class="num">3</div><p><span class="who adp">Adapter manager</span><br>Lifecycle manager installs or checks DPF. Registers <code>VendorProvider/nvidia</code> carrying the PCI IDs and product name the daemon should detect. Deploys the VSP DaemonSet, and an NFD rule that labels BlueField-3 hosts <code>dpu=true</code>.</p></div>
+    <div class="step"><div class="num">4</div><p><span class="who opi">dpu-daemon</span><br>Lands on the labelled host. Its provider-driven detector matches the published PCI IDs, de-duplicates the two ports by serial, and creates one host <code>DataProcessingUnit</code>, <code>nvidia-bf-&lt;serial&gt;-host</code>. The operator does not render a VSP pod for this product.</p></div>
+    <div class="step"><div class="num">5</div><p><span class="who trl">Translator</span><br>Creates the DPF provisioning objects, tracked by annotation with no owner reference. DPF flashes the card and creates the VFs. A later daemon restart recreates the same CR name and re-adopts the same DPF objects, so it cannot trigger a reflash.</p></div>
+    <div class="step"><div class="num">6</div><p><span class="who vsp">Adapter VSP</span><br><code>Init</code> stays Unavailable until the DPF <code>DPU</code> is Ready, then returns <code>127.0.0.1</code> and serves BridgePort plus the OPI lifecycle heartbeat. The daemon advertises the spare VF PCI addresses as <code>openshift.io/dpu</code>. <code>Ready</code> becomes True. <code>SetNumVfs</code> checks the count and never writes sysfs.</p></div>
+    <div class="step"><div class="num">7</div><p><span class="who opi">Pod attach</span><br>A pod on <code>default-sriov-net</code> makes the CNI call <code>CreateBridgePort</code>. The VSP applies a <code>DPUServiceInterface</code> of type <code>vf</code> for that VF, never VF0. The translator holds one default chain: the host-VF selector to uplink <code>p0</code>. DPF programs <code>br-sfc</code>.</p></div>
+    <div class="step"><div class="num">8</div><p><span class="who user">ServiceFunctionChain</span><br>The operator's SFC reconciler skips a network function that has a Helm chart. The translator builds the per-node chain (host VFs to the first function, between functions, last function to <code>p0</code>), two service interfaces per function on the <code>br-sfc</code> NAD, and a <code>DPUService</code> for the chart.</p></div>
+    <div class="step"><div class="num">9</div><p><span class="who trl">Teardown</span><br>The translator deletes DPF objects only after the OPI object has been gone longer than a grace period. <code>DpuOperatorConfig</code> removal is the full teardown.</p></div>
+  </div>
+</div>
+
+<div class="callout">
+  <p><strong>Why the daemon still has to run.</strong> The feature parity with Intel and Marvell is the <code>default-sriov-net</code> network, the <code>openshift.io/dpu</code> resource, and the CNI server. Those are served by <code>dpu-daemon</code>. The adapter cannot import that code, because it lives under <code>internal/</code>. So the daemon runs, and the adapter answers it.</p>
+</div>
+</section>
+
+<section id="decisions">
+<h2>3. Decisions already made</h2>
+<table>
+  <thead><tr><th>Decision</th><th>Choice</th></tr></thead>
+  <tbody>
+    <tr><td>Who writes <code>DPUServiceInterface</code> on <code>CreateBridgePort</code></td><td>The VSP, directly. The translator owns chains, <code>DPUService</code>, and provisioning objects.</td></tr>
+    <tr><td>DPU-side <code>DataProcessingUnit</code></td><td>Deferred. Host-side CR only. DPF state shows up as <code>DPFReady</code> and <code>DPFHardwareCompatible</code>.</td></tr>
+    <tr><td>Hardware</td><td>BlueField-3 only. Device IDs <code>a2dc</code> and <code>a2dd</code>. Skip the SoC management function <code>c2d3</code> and skip VFs.</td></tr>
+    <tr><td>Network functions</td><td>Helm charts are acceptable. The HBN-specific NAD, the hard-coded <code>bf_sf: 4</code>, and the hard-coded <code>6Gi</code> come out.</td></tr>
+    <tr><td>Upstream PRs</td><td>PR 7 and PR 8 are treated as merged.</td></tr>
+    <tr><td>Upstream e2e</td><td>Not a gate for this round.</td></tr>
+    <tr><td>DPF</td><td>Used as-is. No fork, no import into <code>dpu-operator</code>.</td></tr>
+    <tr><td>Size of the <code>dpu-operator</code> change</td><td>Four small, vendor-neutral edits. NVIDIA behaviour stays in the adapter.</td></tr>
+  </tbody>
+</table>
+</section>
+
+<section id="findings">
+<h2>4. Findings that shape the plan</h2>
+<ol>
+  <li><strong>A daemon restart would reflash the DPU</strong> if the adapter kept owner references from the <code>DataProcessingUnit</code>. On shutdown the daemon deletes every DPU CR on its node, and garbage collection would then delete the DPF <code>DPU</code> and <code>BFB</code>. The adapter avoids this with annotation tracking, a delayed delete, and re-adoption by the deterministic CR name. That keeps the fix out of <code>dpu-operator</code>.</li>
+  <li><strong>The daemon overwrites the whole status.</strong> Every <code>Ready</code> change assigns <code>currentDpuCR.Status = dpuCR.Status</code>, which erases <code>DPFReady</code> and <code>DPFHardwareCompatible</code>. This is a two-line bug fix and it affects every vendor.</li>
+  <li><strong>The current VSP would break the real daemon.</strong> The device plugin requires <code>GetDevices</code> to return VF PCI addresses. The VSP returns the card serial. Its heartbeat is registered on the <code>dpu-api</code> package, while the daemon calls the OPI lifecycle <code>HeartbeatService</code>. No BridgePort service is registered, and <code>SetNumVfs</code> only echoes.</li>
+  <li><strong>DPF already creates the host VFs, and VF0 belongs to DPF.</strong> The lab shows 46 VFs on PF0, matching <code>NUM_OF_VFS=46</code> in the <code>DPUFlavor</code>. No adapter script creates them. VF0 (<code>pf0vf0</code> on <code>br-comm-ch</code> / <code>br-dpu</code>) is the management channel. A Marvell-style write of <code>0</code> then <code>N</code> to <code>sriov_numvfs</code> would cut the DPU off from its Kamaji cluster. Spike S1 confirms this before the code relies on it.</li>
+  <li><strong>PR 8 leaves the SFC reconciler creating a pod from <code>nf.Image</code>.</strong> A chart network function has an empty image, so the reconciler would create a broken pod that also consumes two <code>openshift.io/dpu</code> devices. One guard skips chart network functions.</li>
+  <li><strong>The daemon expects a peer at the address <code>Init</code> returns.</strong> For Intel and Marvell that peer is the daemon on the DPU. For NVIDIA the VSP is that peer, on localhost, so nothing OPI-related runs on the BlueField.</li>
+</ol>
+</section>
+
+<section id="calls">
+<h2>5. How each daemon call maps onto DPF</h2>
+<table>
+  <thead><tr><th>Daemon call</th><th>Intel / Marvell</th><th>NVIDIA VSP</th></tr></thead>
+  <tbody>
+    <tr><td><code>Init</code></td><td>Start the data plane and return the DPU-side daemon address.</td><td>Stay Unavailable until the DPF <code>DPU</code> for this serial is Ready, then return the VSP's own <code>127.0.0.1:&lt;port&gt;</code>.</td></tr>
+    <tr><td><code>GetDevices</code></td><td>VF PCI list.</td><td>VF PCI addresses in the pool. Default VF1 through VF(N−1). Never VF0.</td></tr>
+    <tr><td><code>SetNumVfs(8)</code></td><td>Write <code>sriov_numvfs</code>, resetting to 0 first.</td><td>Never write sysfs. Check that DPF already created enough VFs. Return the pool size. The count comes from the <code>DPUFlavor</code> <code>NUM_OF_VFS</code>, which the adapter already sets from the <code>dpu.nvidia.com/num-of-vfs</code> annotation.</td></tr>
+    <tr><td><code>CreateBridgePort host0-N</code></td><td>Add an OVS port and flows.</td><td>Server-side-apply a <code>DPUServiceInterface</code> (<code>interfaceType: vf</code>, <code>pfID: 0</code>, <code>vfID: N</code>), labelled as a host VF for this DPU.</td></tr>
+    <tr><td><code>DeleteBridgePort</code></td><td>Remove the port.</td><td>Delete that <code>DPUServiceInterface</code>.</td></tr>
+    <tr><td><code>Ping</code></td><td>Heartbeat.</td><td>Healthy only when the DPF <code>DPU</code> is Ready and its Kamaji node is Ready.</td></tr>
+    <tr><td><code>CreateNetworkFunction</code> / <code>DeleteNetworkFunction</code></td><td>Called by the daemon on the DPU.</td><td>Never called, because no OPI daemon runs on the BlueField. Return <code>Unimplemented</code>. Network functions arrive through <code>ServiceFunctionChain</code> translation.</td></tr>
+  </tbody>
+</table>
+
+<h3>Chains, owned by the translator, one per DPU node</h3>
+<table>
+  <thead><tr><th>Node state</th><th>DPF <code>DPUServiceChain</code></th></tr></thead>
+  <tbody>
+    <tr><td>No service chain targets the node</td><td><code>opi-default-&lt;dpu&gt;</code>: one switch, ports [host-VF selector, uplink <code>p0</code>].</td></tr>
+    <tr><td>Service chain with functions n1 … nk</td><td>Switches [host VFs, <code>n1-in</code>], [<code>n1-out</code>, <code>n2-in</code>], …, [<code>nk-out</code>, <code>p0</code>].</td></tr>
+  </tbody>
+</table>
+<p>Ports select interfaces by label, so the chain stays put while pods come and go. The VSP only adds and removes labelled interfaces. The translator also emits a <code>physical</code> <code>DPUServiceInterface</code> for <code>p0</code>.</p>
+<p>The CNI does not replay <code>CreateBridgePort</code> after a VSP restart, so interfaces are owned by the host <code>Node</code> and tied to their deterministic name. On start, the VSP deletes an interface whose VF is back in the host network namespace, which means no pod holds it.</p>
+</section>
+
+<section id="split">
+<h2>6. What changes where</h2>
+<p>Four edits in <code>dpu-operator</code>. Three of them go on branches that already have open PRs. Everything that names a DPF object stays in the adapter, on <code>main</code>. The per-item repo and branch is in <code>opi-nvidia-parity-tracker.md</code>.</p>
+<table>
+  <thead><tr><th>Change</th><th>Repo / branch</th><th>Why it cannot move further</th></tr></thead>
+  <tbody>
+    <tr><td>A detector the daemon builds from PCI IDs and the product name published on <code>VendorProvider</code>. Fallback, if that spec cannot carry it, is one NVIDIA detector file of about 80 lines, matching <code>15b3</code> / <code>a2dc</code> / <code>a2dd</code>, de-duplicated by serial, host side only, platform name <code>nvidia-bluefield</code>.</td><td><span class="pill up">opiproject/dpu-operator</span> <code>feat/vendor-provider-spi</code> (PR 7)</td><td>The detector list is compiled into the daemon. The adapter cannot add to it from outside, and it cannot import <code>internal/platform</code>.</td></tr>
+    <tr><td>The <code>DataProcessingUnit</code> controller skips rendering a VSP pod when a provider owns that product. The adapter keeps deploying its own VSP DaemonSet on the same socket path.</td><td><span class="pill up">opiproject/dpu-operator</span> <code>feat/vendor-provider-spi</code> (PR 7)</td><td>The controller always renders <code>bindata/vsp/&lt;platform&gt;</code>. Without the skip, two VSP pods would fight over one socket.</td></tr>
+    <tr><td>Status sync writes only the <code>Ready</code> condition and leaves other conditions in place.</td><td><span class="pill up">opiproject/dpu-operator</span> <code>fix/ready-status-merge</code> (new, off <code>main</code>)</td><td>The write is in the daemon. The adapter cannot stop it from replacing the status.</td></tr>
+    <tr><td>The SFC reconciler skips a network function that has <code>chart</code> set, and still creates the pod for an <code>image</code> network function.</td><td><span class="pill up">opiproject/dpu-operator</span> <code>feat/sfc-helm-chart</code> (PR 8)</td><td>That pod is created by the daemon's reconciler.</td></tr>
+    <tr><td>VSP DaemonSet, NFD rule for <code>dpu=true</code>, <code>Init</code> gating, BridgePort to <code>DPUServiceInterface</code>, chains, <code>DPUService</code>, annotation ownership, delayed delete, cleanup.</td><td><span class="pill ad">sknrao/opi-nvidia-dpf-adapter</span> <code>main</code></td><td>This is the DPF-specific behaviour.</td></tr>
+  </tbody>
+</table>
+<div class="callout ok">
+  <p>The earlier "do not delete <code>DataProcessingUnit</code> objects on daemon shutdown" change is dropped from <code>dpu-operator</code>. The adapter handles a recreated CR by name, so a daemon restart is safe without changing shutdown behaviour for Intel and Marvell.</p>
+</div>
+</section>
+
+<section id="work">
+<h2>7. Adapter work, in build order</h2>
+
+<h3>A. Detection and the host CR</h3>
+<p>Depends on spikes S1, S2, and S6.</p>
+<ul>
+  <li>Publish the PCI IDs and product name on <code>VendorProvider/nvidia</code> so the daemon's generic detector can match a BlueField-3.</li>
+  <li>Keep deploying the VSP DaemonSet from the adapter. Add the NFD rule that sets <code>dpu=true</code> on BlueField-3 hosts, which is what lets the daemon land.</li>
+  <li><code>Init</code> returns Unavailable until the DPF <code>DPU</code> for this serial is Ready, then serves on localhost. The daemon already retries <code>Init</code> forever, so the CR shows <code>Ready=False</code> while DPF provisions.</li>
+  <li>Register the OPI lifecycle <code>HeartbeatService</code>. <code>Ping</code> is healthy only while the DPF <code>DPU</code> and its Kamaji node are Ready.</li>
+  <li>Gate the provisioning mapping on product <code>NVIDIA BlueField-3</code> and <code>isDpuSide=false</code>. Drop the declared-versus-observed double check, since the detector now sets the product name.</li>
+  <li>Track DPF provisioning objects by annotation. Delete them only after the OPI CR has been gone for a grace period, or when <code>DpuOperatorConfig</code> is removed. A recreated CR re-adopts by name.</li>
+  <li>Remove <code>cmd/opi-daemon</code> and <code>ReportReady</code>. <code>ReportReady</code> also wrote <code>Ready</code> on <code>DpuOperatorConfig</code>, which conflicts with the operator. Keep the annotator inside the VSP process: the daemon updates <code>spec</code>, so annotations survive.</li>
+</ul>
+
+<h3>B. VF attach and the default network</h3>
+<p>Depends on spikes S3 and S4. No further <code>dpu-operator</code> change: the daemon, CNI, and device plugin already make these calls.</p>
+<ul>
+  <li><code>GetDevices</code> returns VF PCI addresses from VF1 up, never VF0.</li>
+  <li><code>SetNumVfs</code> checks that DPF created enough VFs and returns that count. It never writes <code>sriov_numvfs</code>.</li>
+  <li><code>CreateBridgePort</code> and <code>DeleteBridgePort</code> apply and delete the <code>vf</code> <code>DPUServiceInterface</code>.</li>
+  <li>The translator holds the default chain (host VFs to <code>p0</code>) and the <code>p0</code> interface.</li>
+  <li>Interfaces are owned by the host <code>Node</code>. On restart the VSP drops an interface whose VF has returned to the host namespace.</li>
+</ul>
+
+<h3>C. Network functions and service chains</h3>
+<p>Depends on spike S5.</p>
+<ul>
+  <li>Two <code>service</code> interfaces per network function, on the <code>br-sfc</code> NAD. <code>nvidia.com/bf_sf</code> comes from the interface count. The SFC <code>nodeSelector</code> is mapped onto DPU nodes.</li>
+  <li>Per-node chain: host VFs to the first function, between functions, and the last function to <code>p0</code>.</li>
+  <li>Document the chart contract: a chart consumes the two interfaces DPF injects.</li>
+  <li><code>CreateNetworkFunction</code> and <code>DeleteNetworkFunction</code> return <code>Unimplemented</code>.</li>
+</ul>
+
+<div class="callout">
+  <p><strong>Still outside this plan.</strong> Creating the <code>DPUCluster</code> and Kamaji, and choosing the BFB URL, are manual today. The lifecycle manager has to grow defaults for those before the flow above is fully hands-off. That is adapter work, and it is not required to prove the data path.</p>
+</div>
+</section>
+
+<section id="spikes">
+<h2>8. Spikes to run before coding</h2>
+<p>A spike is a short experiment that answers one question the design depends on, before the code assumes the answer. Each one has a fallback, so none of them blocks the plan. They are not a code change and not a test suite.</p>
+<table>
+  <thead><tr><th></th><th>Question</th><th>If the answer is no</th></tr></thead>
+  <tbody>
+    <tr><td>S1</td><td>Who creates the host VFs, and which indexes does DPF reserve besides VF0?</td><td>The pool start moves. <code>SetNumVfs</code> still must not write sysfs.</td></tr>
+    <tr><td>S2</td><td>How does a host node map to its DPU node in the Kamaji tenant, and which labels can a <code>nodeSelector</code> use?</td><td>The translator learns whatever label the dump shows. Objects still have to land on that node.</td></tr>
+    <tr><td>S3</td><td>Can one chain port's <code>matchLabels</code> select several VF interfaces, and do those VFs then share L2?</td><td>The translator lists one port per VF. The 50-port limit then caps the pool at 49.</td></tr>
+    <tr><td>S4</td><td>How long does a <code>vf</code> <code>DPUServiceInterface</code> take to become Ready, and to appear on <code>br-sfc</code>?</td><td>If it exceeds the CNI ADD timeout, <code>CreateBridgePort</code> returns once DPF has accepted the object.</td></tr>
+    <tr><td>S5</td><td>What happens to live traffic when one chain replaces another, and can one interface sit in two chains at once?</td><td>The translator drains one chain before installing the next, and reports the gap.</td></tr>
+    <tr><td>S6</td><td>Do the VF operations the upstream CNI performs (MAC, VLAN, spoof check, trust) succeed on these mlx5 VFs, and is the CNI and device-plugin machinery present on this host?</td><td>The host path needs a k3s-specific CNI install before M-style pod attach can work. Independent of DPF.</td></tr>
+  </tbody>
+</table>
+
+<h3>How to run it</h3>
+<p>Script: <code>opi-nvidia-dpf-adapter/hack/lab-spike-nvidia-dataplane.sh</code>, also <code>make lab-spike-nvidia-dataplane</code>. Run it on the lab host as root, with the DPU up. It is read-only unless <code>ACTIVE=1</code>.</p>
+<pre>cd opi-nvidia-dpf-adapter
+bash ./hack/lab-spike-nvidia-dataplane.sh
+ACTIVE=1 DPU_HOST=&lt;bf-oob-ip&gt; DPU_USER=ubuntu DPU_PASS=&lt;pw&gt; \
+  bash ./hack/lab-spike-nvidia-dataplane.sh</pre>
+<p><code>ACTIVE=1</code> uses the two highest-numbered spare VFs (never VF0, never a VF already claimed, and it never writes <code>sriov_numvfs</code>). It moves them into throwaway network namespaces, applies spike-labelled <code>DPUServiceInterface</code> and <code>DPUServiceChain</code> objects, pings, swaps the chain, and removes everything on exit, including on failure or Ctrl-C. <code>DPU_HOST</code> is optional; without it the OVS ports, flows, and OVS timings are skipped. <code>VF_A</code>, <code>VF_B</code>, and <code>SPIKE_NS</code> override the choices.</p>
+<p>Bring back <code>/tmp/spike-nvidia-dataplane-&lt;stamp&gt;.tgz</code>, or at least <code>SUMMARY.txt</code>. The archive contains serials and addresses, so it stays out of git. Output goes to <code>/tmp</code> for that reason.</p>
+</section>
+
+<section id="done">
+<h2>9. Done when</h2>
+<ul>
+  <li><strong>After A.</strong> Applying <code>DpuOperatorConfig</code> with <code>vendor=nvidia</code> is enough. The host <code>DataProcessingUnit</code> appears on its own, DPF provisions the card, the real daemon reports <code>Ready=True</code>, and <code>DPFReady</code> stays set across a daemon restart. The card is not reprovisioned.</li>
+  <li><strong>After B.</strong> A pod on <code>default-sriov-net</code> gets a VF, a <code>DPUServiceInterface</code> appears for it, and the default chain carries traffic to <code>p0</code>. Deleting the pod removes the interface.</li>
+  <li><strong>After C.</strong> An SFC with a Helm chart produces the DPF service and the stitched chain. Pod to pod, pod to network function, pod to pod through a network function, and removal of the chain all work from OPI objects only. The empty-image pod no longer appears.</li>
+</ul>
+<p>The upstream e2e suite (webhook, host workload pods, traffic between pods, SFC pod creation, pod to external, delete of the network function, more chains than resources) is the eventual bar. It is not a gate for this round.</p>
+</section>
+
+<section id="delta">
+<h2>10. What changed from the earlier write-up</h2>
+<p>The call mapping, the chain design, the six spikes, and the three decisions are unchanged. These five points moved, to keep the <code>dpu-operator</code> diff small:</p>
+<table>
+  <thead><tr><th>Earlier</th><th>Now</th></tr></thead>
+  <tbody>
+    <tr><td>Work grouped as milestones M-A, M-B, M-C.</td><td>Same three groups, renamed A, B, and C, and placed under the target lifecycle in section 2. The milestone names are retired.</td></tr>
+    <tr><td>An NVIDIA detector file compiled into the daemon.</td><td>A generic detector fed by <code>VendorProvider</code>, so the PCI IDs live in the adapter. A small NVIDIA file remains the fallback.</td></tr>
+    <tr><td>The operator renders the NVIDIA VSP pod from bindata, and the adapter's VSP DaemonSet is removed.</td><td>The adapter keeps deploying the VSP. The operator skips rendering one for a provider-owned product.</td></tr>
+    <tr><td><code>dpu-operator</code> stops deleting DPU CRs on daemon shutdown.</td><td>Dropped. The adapter survives the deletion and re-adopts by name. Intel and Marvell shutdown behaviour stays as it is.</td></tr>
+    <tr><td>The adapter is deployed beside the operator, and detection is what starts the rest.</td><td>The operator loads the adapter manager first, from <code>vendor=nvidia</code>, and the adapter then labels the host so the daemon arrives.</td></tr>
+  </tbody>
+</table>
+</section>
+
+</div>
+</body>
+</html>
