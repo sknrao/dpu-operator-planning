@@ -312,9 +312,9 @@
 <p>Script: <code>opi-nvidia-dpf-adapter/hack/lab-spike-nvidia-dataplane.sh</code>, also <code>make lab-spike-nvidia-dataplane</code>. Run it on the lab host as root, with the DPU up. It is read-only unless <code>ACTIVE=1</code>.</p>
 <pre>cd opi-nvidia-dpf-adapter
 bash ./hack/lab-spike-nvidia-dataplane.sh
-ACTIVE=1 DPU_HOST=&lt;bf-oob-ip&gt; DPU_USER=ubuntu DPU_PASS=&lt;pw&gt; \
+ACTIVE=1 DPU_IP=&lt;dpu-ssh-ip&gt; DPU_USER=ubuntu DPU_PASS=&lt;pw&gt; \
   bash ./hack/lab-spike-nvidia-dataplane.sh</pre>
-<p><code>ACTIVE=1</code> uses the two highest-numbered spare VFs (never VF0, never a VF already claimed, and it never writes <code>sriov_numvfs</code>). It moves them into throwaway network namespaces, applies spike-labelled <code>DPUServiceInterface</code> and <code>DPUServiceChain</code> objects, pings, swaps the chain, and removes everything on exit, including on failure or Ctrl-C. <code>DPU_HOST</code> is optional; without it the OVS ports, flows, and OVS timings are skipped. <code>VF_A</code>, <code>VF_B</code>, and <code>SPIKE_NS</code> override the choices.</p>
+<p><code>ACTIVE=1</code> uses the two highest-numbered spare VFs (never VF0, never a VF already claimed, and it never writes <code>sriov_numvfs</code>). It moves them into throwaway network namespaces, applies spike-labelled <code>DPUServiceInterface</code> and <code>DPUServiceChain</code> objects, pings, swaps the chain, and removes everything on exit, including on failure or Ctrl-C. <code>DPU_IP</code> is the BlueField address to SSH to, and it is optional; without it the OVS ports, flows, and OVS timings are skipped. <code>VF_A</code>, <code>VF_B</code>, and <code>SPIKE_NS</code> override the choices.</p>
 <p>Bring back <code>/tmp/spike-nvidia-dataplane-&lt;stamp&gt;.tgz</code>, or at least <code>SUMMARY.txt</code>. The archive contains serials and addresses, so it stays out of git. Output goes to <code>/tmp</code> for that reason.</p>
 </section>
 

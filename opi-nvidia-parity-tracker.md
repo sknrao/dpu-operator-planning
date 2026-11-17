@@ -52,45 +52,45 @@ NVIDIA DPF itself is not a repo we change.
 | S5 | Chain swap disruption, interface in two chains | — | — | ☐ | lab only |
 | S6 | Upstream CNI VF operations on mlx5 | — | — | ☐ | lab only |
 | S7 | Record spike results and adjust items | this file | S1–S6 | ☐ | |
-| U1 | `VendorProvider` detection fields | dpu-operator `feat/vendor-provider-spi` | — | ☐ | PR 7 |
-| U2 | Provider-driven detector in the daemon | dpu-operator `feat/vendor-provider-spi` | U1 | ☐ | PR 7 |
-| U3 | Skip VSP rendering for provider-owned products | dpu-operator `feat/vendor-provider-spi` | U1 | ☐ | PR 7 |
-| U4 | Ready-only status merge | dpu-operator `fix/ready-status-merge` | — | ☐ | new PR off `main` |
-| U5 | SFC reconciler skips chart network functions | dpu-operator `feat/sfc-helm-chart` | — | ☐ | PR 8 |
-| U6 | Upstream docs and tests for U1–U5 | same branch as the item it covers | U1–U5 | ☐ | |
-| A1 | Publish detection data on `VendorProvider/nvidia` | adapter `main` | U1 | ☐ | |
-| A2 | NFD rule labels BlueField-3 hosts `dpu=true` | adapter `main` | S6 | ☐ | |
-| A3 | Manager ensures the VSP DaemonSet | adapter `main` | U3 | ☐ | |
-| A4 | VSP `Init` gated on DPF `DPU` Ready | adapter `main` | — | ☐ | |
-| A5 | OPI lifecycle heartbeat in the VSP | adapter `main` | A4 | ☐ | |
-| A6 | Provisioning mapping gated on product and host side | adapter `main` | U2 | ☐ | |
-| A7 | Annotation ownership and delayed delete | adapter `main` | — | ☐ | |
-| A8 | Remove `opi-daemon` and `ReportReady` | adapter `main` | A4, A5 | ☐ | |
+| U1 | `VendorProvider` detection fields | dpu-operator `feat/vendor-provider-spi` | — | ☑ | `61ad0802` pushed. Dropped `hostSideOnly` and `dedupeBy`: detection is host-side only and always dedupes by serial. `3947c115` (not pushed) vendors the fake client so the controller tests compile with `-mod=vendor`. |
+| U2 | Provider-driven detector in the daemon | dpu-operator `feat/vendor-provider-spi` | U1 | ☑ | `61ad0802` pushed |
+| U3 | Skip VSP rendering for provider-owned products | dpu-operator `feat/vendor-provider-spi` | U1 | ☑ | `61ad0802` pushed |
+| U4 | Ready-only status merge | dpu-operator `fix/ready-status-merge` | — | ☐ | new PR off `main`. Parked until PR 7 and PR 8 merge. |
+| U5 | SFC reconciler skips chart network functions | dpu-operator `feat/sfc-helm-chart` | — | ☑ | `5778fcc1` pushed |
+| U6 | Upstream docs and tests for U1–U5 | same branch as the item it covers | U1–U5 | ☐ | U1–U3 docs are in `61ad0802`. U5 docs are in `5778fcc1`. U4 docs remain. |
+| A1 | Publish detection data on `VendorProvider/nvidia` | adapter `main` | U1 | ☑ | Lab 2026-11-17: daemon created `nvidia-bluefield-<serial>-host` from `spec.detection` (`15b3`, `a2dc`/`a2dd`, exclude `c2d3`, product `BlueField-3`). |
+| A2 | NFD rule labels BlueField-3 hosts `dpu=true` | adapter `main` | S6 | ☐ | Not met. NFD stores a slash-less key as `feature.node.kubernetes.io/dpu`. `dpu-daemon` selects bare `dpu=true`. Lab copies that label in `lab-milestone-01-cluster.sh`. |
+| A3 | Manager ensures the VSP DaemonSet | adapter `main` | U3 | ☐ | Not exercised. Lab installs the adapter with `make deploy`. |
+| A4 | VSP `Init` gated on DPF `DPU` Ready | adapter `main` | — | ☑ | Lab 2026-11-17: after DPF Ready, VSP served `127.0.0.1:50051` and the host CR went Ready. Requires VSP `hostNetwork` and health port `18082`. |
+| A5 | OPI lifecycle heartbeat in the VSP | adapter `main` | A4 | ☑ | Same run: `Ping` reached Ready. A VSP restart leaves Ready false until `dpu-daemon` is bounced; the daemon does not redial. |
+| A6 | Provisioning mapping gated on product and host side | adapter `main` | U2 | ☑ | Same run: one DPF `DPU` reached Ready from the daemon-created host CR. Flavor came from the lab `--flavor` flag. |
+| A7 | Annotation ownership and delayed delete | adapter `main` | — | ☑ | Parity: daemon restart kept the DPF `DPU` uid and `DPFReady`. The lab daemon image includes the U4 patch. Upstream U4 is still open. |
+| A8 | Remove `opi-daemon` and `ReportReady` | adapter `main` | A4, A5 | ☐ | Lab overlay drops the kind sidecar. Not signed off as removed from every profile. |
 | A9 | VSP and manager RBAC | adapter `main` | A3, B4 | ☐ | |
-| A10 | Phase A lab check | — | A1–A9, U1–U4 | ☐ | lab only |
-| B1 | VF pool definition | adapter `main` | S1 | ☐ | |
-| B2 | `GetDevices` returns VF PCI addresses | adapter `main` | B1 | ☐ | |
-| B3 | `SetNumVfs` verifies, never writes | adapter `main` | B1 | ☐ | |
-| B4 | BridgePort service writes `DPUServiceInterface` | adapter `main` | S2, S4, B2 | ☐ | |
-| B5 | Interface ownership and restart reconciliation | adapter `main` | B4 | ☐ | |
-| B6 | Translator default chain and `p0` interface | adapter `main` | S2, S3 | ☐ | |
-| B7 | Network function RPCs return `Unimplemented` | adapter `main` | — | ☐ | |
-| B8 | Phase B lab check | — | B1–B7, A10 | ☐ | lab only |
-| C1 | Two service interfaces per network function | adapter `main` | S2 | ☐ | |
-| C2 | Derived `bf_sf`, remove HBN hard-coding | adapter `main` | C1 | ☐ | |
-| C3 | SFC `nodeSelector` mapped to DPU nodes | adapter `main` | S2 | ☐ | |
-| C4 | Per-node stitched chain and swap strategy | adapter `main` | S5, B6, C1 | ☐ | |
-| C5 | Network function chart contract and sample chart | adapter `main` | C1 | ☐ | |
-| C6 | SFC status reporting | adapter `main` | C4 | ☐ | |
-| C7 | Phase C lab check | — | C1–C6, U5, B8 | ☐ | lab only |
-| H1 | `DPUCluster` and Kamaji defaults in the lifecycle manager | adapter `main` | — | ☐ | |
-| H2 | BFB URL default | adapter `main` | — | ☐ | |
-| H3 | Kamaji kubelet-config skew handled without a manual step | adapter `main` | — | ☐ | |
+| A10 | Phase A lab check | — | A1–A9, U1–U4 | ☐ | Blocked on A2, A3, A8, A9, and upstream U4. |
+| B1 | VF pool definition | adapter `main` | S1 | ☑ | Lab attach used PF0 VFs above VF0. `openshift.io/dpu` was allocatable (45 on the first passing bring-up). |
+| B2 | `GetDevices` returns VF PCI addresses | adapter `main` | B1 | ☑ | Pods scheduled on `openshift.io/dpu` and got a `net1`. |
+| B3 | `SetNumVfs` verifies, never writes | adapter `main` | B1 | ☑ | No lab step writes `sriov_numvfs`. Pool size matched the existing firmware VFs. |
+| B4 | BridgePort service writes `DPUServiceInterface` | adapter `main` | S2, S4, B2 | ☑ | Parity: host VF interfaces appeared when `parity-a` and `parity-b` attached, and one went away when `parity-b` was deleted. |
+| B5 | Interface ownership and restart reconciliation | adapter `main` | B4 | ☑ | Parity: VSP restart kept the interface still held by `parity-a`. Delete must happen before that restart; a dead dial leaks the CR. |
+| B6 | Translator default chain and `p0` interface | adapter `main` | S2, S3 | ☑ | Parity: `opi-default-<dpu>` and `opi-<dpu>-p0` existed, and the external ping from `parity-a` passed. |
+| B7 | Network function RPCs return `Unimplemented` | adapter `main` | — | ☐ | Code is in the VSP. This lab did not call those RPCs. |
+| B8 | Phase B lab check | — | B1–B7, A10 | ☐ | Attach and ping passed inside `lab-verify-parity`. Formal B8 stays open until A10 and B7 are closed. |
+| C1 | Two service interfaces per network function | adapter `main` | S2 | ☑ | Parity SFC created the chart function's in and out interfaces. |
+| C2 | Derived `bf_sf`, remove HBN hard-coding | adapter `main` | C1 | ☑ | Same SFC. No HBN NAD in the parity path. |
+| C3 | SFC `nodeSelector` mapped to DPU nodes | adapter `main` | S2 | ☑ | The function pod ran on the tenant node for that DPU. |
+| C4 | Per-node stitched chain and swap strategy | adapter `main` | S5, B6, C1 | ☑ | Parity: applying the SFC overlaid the default chain, and deleting it restored `opi-default-<dpu>`. |
+| C5 | Network function chart contract and sample chart | adapter `main` | C1 | ☑ | Parity chart pull succeeded. Milestone 2 separately ran `ping-sf` `0.1.0`. |
+| C6 | SFC status reporting | adapter `main` | C4 | ☑ | Parity SFC checks passed, including status. |
+| C7 | Phase C lab check | — | C1–C6, U5, B8 | ☐ | SFC section of `lab-verify-parity` passed on 2026-11-17. Left open because B8 is open. |
+| H1 | `DPUCluster` and Kamaji defaults in the lifecycle manager | adapter `main` | — | ☐ | Lab brought Kamaji up from `lab-bringup-pre-create.sh`, not from the lifecycle manager. |
+| H2 | BFB URL default | adapter `main` | — | ☐ | Lab still sets `DPU_BFB_URL` in `config/overlays/lab/pci-patch.yaml`. |
+| H3 | Kamaji kubelet-config skew handled without a manual step | adapter `main` | — | ☐ | Milestone 1 still runs `lab-strip-bf-kubelet-config` while the phase is `DPU Cluster Config`. The tenant node did reach Ready after that. |
 | V1 | Unit and conformance tests | adapter `main` | per item | ☐ | same branch as the item |
-| V2 | Lab verification scripts per phase | adapter `main` | A10, B8, C7 | ☐ | |
+| V2 | Lab verification scripts per phase | adapter `main` | A10, B8, C7 | ☐ | `make lab-verify-parity` passed on dh5 on 2026-11-17 (re-run). It is one script, not the three phase scripts named below. |
 | V3 | Upstream e2e subset on BlueField-3 | — | C7 | ☐ | run upstream e2e; no branch unless a test has to change |
 | V4 | Feature parity matrix signed off | this file | V3 | ☐ | |
-| R1 | User documentation | adapter `main` | C7 | ☐ | |
+| R1 | User documentation | adapter `main` | C7 | ☐ | Lab runbook is `docs/user-guide-lab-milestones.md`. `docs/configuration.md` separates lab values from the product. A generic install guide is still open. |
 | R2 | Correct the architecture review | this workspace, not a git repo | — | ☐ | `opi-dpf-architecture-review.html` |
 | R3 | Public-repo hygiene | adapter `main` | — | ☐ | |
 | R4 | Images, versions, release notes | adapter `main`; image key on dpu-operator `feat/vendor-provider-spi` | C7 | ☐ | |
@@ -107,7 +107,7 @@ Script: `opi-nvidia-dpf-adapter/hack/lab-spike-nvidia-dataplane.sh` (also `make 
 ```bash
 cd opi-nvidia-dpf-adapter
 bash ./hack/lab-spike-nvidia-dataplane.sh
-ACTIVE=1 DPU_HOST=<bf-oob-ip> DPU_USER=ubuntu DPU_PASS=<pw> \
+ACTIVE=1 DPU_IP=<dpu-ssh-ip> DPU_USER=ubuntu DPU_PASS=<pw> \
   bash ./hack/lab-spike-nvidia-dataplane.sh
 ```
 
@@ -484,19 +484,19 @@ Repo: `sknrao/opi-nvidia-dpf-adapter`, branch `main`. Cut a `feat/<ID>-<short>` 
 
 ### [ ] V4 — Feature parity matrix
 
-| Feature (as Intel and Marvell provide it) | Delivered by | Status |
-|---|---|---|
-| Automatic DPU detection and `DataProcessingUnit` creation | U1, U2, A1, A2 | ☐ |
-| Vendor plugin started per DPU | U3, A3 | ☐ |
-| DPU readiness on `Ready` | A4, A5, U4 | ☐ |
-| `openshift.io/dpu` VF resource | B1, B2, B3 | ☐ |
-| Pod attach through `default-sriov-net` and the OPI CNI | B4, B5, S6 | ☐ |
-| Pod to pod and pod to external traffic | B6 | ☐ |
-| Network function insertion through `ServiceFunctionChain` | C1–C6, U5 | ☐ |
-| Network function removal | C4 | ☐ |
-| Resource exhaustion handled | B8, V3 | ☐ |
-| Daemon restart safe | A7, U4 | ☐ |
-| Install from `DpuOperatorConfig` only | A1–A3, H1, H2 | ☐ |
+| Feature (as Intel and Marvell provide it) | Delivered by | Status | Lab note |
+|---|---|---|---|
+| Automatic DPU detection and `DataProcessingUnit` creation | U1, U2, A1, A2 | ☐ | Detection and the daemon-created CR passed. Bare `dpu=true` is still copied by the lab script (A2). |
+| Vendor plugin started per DPU | U3, A3 | ☐ | Lab VSP is `make deploy`, not started by the operator. |
+| DPU readiness on `Ready` | A4, A5, U4 | ☐ | Ready passed on the lab image, which carries the U4 patch. Upstream U4 is not open as a PR yet. |
+| `openshift.io/dpu` VF resource | B1, B2, B3 | ☑ | dh5, 2026-11-17. |
+| Pod attach through `default-sriov-net` and the OPI CNI | B4, B5, S6 | ☑ | `parity-a` and `parity-b` Ready. Needs whereabouts and the daemon CNI hostPaths on k3s. |
+| Pod to pod and pod to external traffic | B6 | ☑ | External ping from `parity-a` passed. Milestone 2 host↔DPU ping also passed. |
+| Network function insertion through `ServiceFunctionChain` | C1–C6, U5 | ☑ | Parity SFC section passed. |
+| Network function removal | C4 | ☑ | Deleting the SFC restored the default chain. |
+| Resource exhaustion handled | B8, V3 | ☐ | Not run. |
+| Daemon restart safe | A7, U4 | ☑ | Parity restart check passed on the lab image only. |
+| Install from `DpuOperatorConfig` only | A1–A3, H1, H2 | ☐ | Not the lab install path. |
 
 ---
 
@@ -531,9 +531,21 @@ Fill in after S1–S6 run.
 
 | Spike | Answer | Evidence | Decision | Items updated |
 |---|---|---|---|---|
-| S1 | | | | |
-| S2 | | | | |
-| S3 | | | | |
-| S4 | | | | |
-| S5 | | | | |
-| S6 | | | | |
+| S1 | Both PFs show `sriov_numvfs` equal to firmware `NUM_OF_VFS` (46) and the `DPUFlavor` `nvconfig`. No boot file writes `sriov_numvfs`. PF0 VF0 is the only VF on `br-dpu`. VF10 was out of the host netns because a lab pod held it. PF1 VFs are unused by the data path. | `spike-nvidia-dataplane-20261116T113606Z/s1-vf-ownership.txt` | Pool is PF0 VF1 onward. Never VF0. Never write `sriov_numvfs`. | B1, B3 |
+| S2 | DPF `DPU` name is the tenant node name. `spec.dpuNodeName` is the x86 node. Tenant `ServiceInterface.spec.node` is the DPU name. `parentInterfaceRef` is `p0-<dpu-name>`, not `p0`. | `s2-node-mapping.txt` | Interfaces and chains target `spec.node` = DPU name. Uplink ref is `p0-<dpu-name>`. | B4, B6, C1, C3 |
+| S3 | One port whose labels match two VF interfaces stays `Ready=False`: DPF requires exactly one interface per port (`found 2`). One port per VF was Ready in 1.4s and pinged 5/5. | `s3-s4-chain-and-latency.txt` | One chain port per interface. 45 host VFs plus `p0` is 46 ports, under the 50-port cap. | B6, C4 |
+| S4 | A `vf` `DPUServiceInterface` was Ready in about 0.5s. OVS timing was not captured: SSH to the BlueField was denied. | `SUMMARY.txt`, `ovs-snapshots.txt` | `CreateBridgePort` may wait for Ready. Re-run OVS timing only if a later lab check needs it. | B4 |
+| S5 | A second chain on the same ports became Ready with no ping loss. Deleting the first chain lost nothing. Deleting the last chain stopped traffic (92 lost). Putting a chain back lost 3 replies, then recovered. | `s5-chain-swap.txt`, `SUMMARY.txt` | Overlap the new chain with the old one, then delete the old one. | C4 |
+| S6 | `dpu-cni` is not on the x86 node. The node has no `dpu=true` label, so `dpu-daemon` is not scheduled. `default-sriov-net` exists. Setting a VF MAC and VLAN 0 succeeded. spoof check, trust, link state, and max tx rate returned `Operation not permitted`. Allocatable `nvidia.com/mlnx_sriov` is 1. | `s6-opi-cni-static.txt`, `s6-vf-netlink.txt` | A2 still labels the node. B8 cannot pass until `dpu-cni` is installed and the EPERM VF ops are handled. That does not block A4, A5, or A7. | A2, B8 |
+
+## Lab run 2026-11-17 (dh5)
+
+`make lab-milestone-01-cluster`, then `make lab-verify-parity` (re-run after the whereabouts, hostNetwork, and daemon-mount fixes), then `make lab-milestone-02-ping`. All three passed. The daemon image was PR 7 + PR 8 plus `hack/lab-u4-ready-only.patch`. The adapter was installed with `make deploy`, not by `dpu-operator`.
+
+| Check | Result |
+|---|---|
+| Daemon-created host `DataProcessingUnit`, one DPF `DPU` Ready, tenant node Ready | Pass, after the kubelet-config strip |
+| `lab-verify-parity` (Ready, default chain, `p0`, OPI CNI attach, SFC create and delete) | Pass |
+| Host VF ↔ `ping-sf` ping (`lab-milestone-02-ping`) | Pass, 3/3, `fail_mode=secure` |
+
+Still required on this k3s host, and not part of the generic product: bare `dpu=true` copied from the NFD feature label, whereabouts `v0.9.4` in both CNI directories, `dpu-daemon` `runAsUser: 0` plus hostPath mounts of `/opt/cni` and the k3s CNI dir, VSP `hostNetwork` with health port `18082`, and the U4 patch in the lab daemon image. A VSP restart still leaves Ready false until the daemon is bounced.

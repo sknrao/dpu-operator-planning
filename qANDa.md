@@ -181,11 +181,11 @@ Run it on dh5 as root, with the DPU in OPERATIONAL state:
 ```bash
 cd opi-nvidia-dpf-adapter
 bash ./hack/lab-spike-nvidia-dataplane.sh                     # read-only first
-ACTIVE=1 DPU_HOST=<bf-oob-ip> DPU_USER=ubuntu DPU_PASS=<pw> \
+ACTIVE=1 DPU_IP=<dpu-ssh-ip> DPU_USER=ubuntu DPU_PASS=<pw> \
   bash ./hack/lab-spike-nvidia-dataplane.sh                   # full run
 ```
 
-`DPU_HOST` is optional; without it the OVS ports, flows and OVS timings are skipped. You can pin the VFs with `VF_A=` and `VF_B=`, and the namespace with `SPIKE_NS=`.
+`DPU_IP` is the BlueField address to SSH to. It is optional; without it the OVS ports, flows and OVS timings are skipped. You can pin the VFs with `VF_A=` and `VF_B=`, and the namespace with `SPIKE_NS=`.
 
 Please send back the `/tmp/spike-nvidia-dataplane-<stamp>.tgz` it produces, or at minimum `SUMMARY.txt`. Output goes to `/tmp` rather than `working-directory/` because it contains serials and addresses.
 
