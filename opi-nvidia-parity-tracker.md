@@ -59,15 +59,15 @@ NVIDIA DPF itself is not a repo we change.
 | U5 | SFC reconciler skips chart network functions | dpu-operator `feat/sfc-helm-chart` | — | ☑ | `5778fcc1` pushed |
 | U6 | Upstream docs and tests for U1–U5 | same branch as the item it covers | U1–U5 | ☐ | U1–U3 docs are in `61ad0802`. U5 docs are in `5778fcc1`. U4 docs remain. |
 | A1 | Publish detection data on `VendorProvider/nvidia` | adapter `main` | U1 | ☑ | Lab 2026-11-17: daemon created `nvidia-bluefield-<serial>-host` from `spec.detection` (`15b3`, `a2dc`/`a2dd`, exclude `c2d3`, product `BlueField-3`). |
-| A2 | NFD rule labels BlueField-3 hosts `dpu=true` | adapter `main` | S6 | ☐ | Code done, not committed. `pkg/nodelabel` copies `feature.node.kubernetes.io/dpu=true` to bare `dpu=true` and never removes it. The flash-trigger rule now matches only BlueField-3 device IDs `a2dc`/`a2dd`, so ConnectX NICs are excluded. Lab check pending (A10). |
-| A3 | Manager ensures the VSP DaemonSet | adapter `main` | U3 | ☐ | Code done, not committed. Lab overlay deletes the kustomize DaemonSet and sets `--manage-vsp-daemonset`, `--vsp-flavor`, and `VSP_IMAGE` from the manager image. Render matches the lab pci-patch (test). Lab recreate check pending. |
+| A2 | NFD rule labels BlueField-3 hosts `dpu=true` | adapter `main` | S6 | ☑ | `7e5c89c`. Labeler copies `feature.node.kubernetes.io/dpu=true` to bare `dpu=true` and never removes it. Rule matches only `a2dc`/`a2dd`. Lab overlay ships the rule. Gate holds the label until `dpu-cluster-1` is Ready and `dpf-lab-ovs-flavor` exists. dh5 smoke on an already-provisioned host (`:a2a3a8a9-2`): `dpu=true` on the BlueField-3 host. The absent-to-present timing was not run (A10). |
+| A3 | Manager ensures the VSP DaemonSet | adapter `main` | U3 | ☑ | `3eeefc0`, SA fix `e5e659d`. dh5: owner is `DpuOperatorConfig`, DaemonSet came back after delete, args carry the flavor and BFB URL. ServiceAccount is `opi-nvidia-dpf-adapter-nvidia-vsp` (kustomize namePrefix). Deleting `DpuOperatorConfig` was not run. |
 | A4 | VSP `Init` gated on DPF `DPU` Ready | adapter `main` | — | ☑ | Lab 2026-11-17: after DPF Ready, VSP served `127.0.0.1:50051` and the host CR went Ready. Requires VSP `hostNetwork` and health port `18082`. |
 | A5 | OPI lifecycle heartbeat in the VSP | adapter `main` | A4 | ☑ | Same run: `Ping` reached Ready. A VSP restart leaves Ready false until `dpu-daemon` is bounced; the daemon does not redial. |
 | A6 | Provisioning mapping gated on product and host side | adapter `main` | U2 | ☑ | Same run: one DPF `DPU` reached Ready from the daemon-created host CR. Flavor came from the lab `--flavor` flag. |
 | A7 | Annotation ownership and delayed delete | adapter `main` | — | ☑ | Parity: daemon restart kept the DPF `DPU` uid and `DPFReady`. The lab daemon image includes the U4 patch. Upstream U4 is still open. |
-| A8 | Remove `opi-daemon` and `ReportReady` | adapter `main` | A4, A5 | ☐ | Code done, not committed: `cmd/opi-daemon`, `config/opi-daemon`, `ReportReady`, the VSP sidecar, and the `vsp-opi-daemon` writer name are removed. The writer is now `dpu-daemon`. Lab check pending (A10). |
-| A9 | VSP and manager RBAC | adapter `main` | A3, B4 | ☐ | VSP role tightened: no status writes, no `update`, no wildcards; `dpuserviceinterfaces` create, patch, delete only. Pinned by tests. Manager gained `nodes` (A2) and `daemonsets` (A3). Not signed off until the lab run. |
-| A10 | Phase A lab check | — | A1–A9, U1–U4 | ☐ | Needs the lab run. A2, A3 (behind a flag), A8, and A9 are code-complete in the adapter working tree. U4 is [PR 9](https://github.com/opiproject/dpu-operator/pull/9), DCO check still failing. |
+| A8 | Remove `opi-daemon` and `ReportReady` | adapter `main` | A4, A5 | ☑ | `3eeefc0`. dh5 DaemonSet has one container, `vsp`. Writer is `dpu-daemon`. |
+| A9 | VSP and manager RBAC | adapter `main` | A3, B4 | ☑ | `3eeefc0`. dh5 `kubectl auth can-i` as the VSP ServiceAccount denied delete of `dataprocessingunits`, get of `secrets`, and wildcard access. VSP logs had no `forbidden`. |
+| A10 | Phase A lab check | — | A1–A9, U1–U4 | ☐ | A2, A3, A8, and A9 passed on an already-provisioned dh5 (`:a2a3a8a9-2`). Still open: a fresh install where `dpu=true` appears only after the gate opens, and U4 [PR 9](https://github.com/opiproject/dpu-operator/pull/9) (DCO still failing). |
 | B1 | VF pool definition | adapter `main` | S1 | ☑ | Lab attach used PF0 VFs above VF0. `openshift.io/dpu` was allocatable (45 on the first passing bring-up). |
 | B2 | `GetDevices` returns VF PCI addresses | adapter `main` | B1 | ☑ | Pods scheduled on `openshift.io/dpu` and got a `net1`. |
 | B3 | `SetNumVfs` verifies, never writes | adapter `main` | B1 | ☑ | No lab step writes `sriov_numvfs`. Pool size matched the existing firmware VFs. |
@@ -246,22 +246,22 @@ Repo: `sknrao/opi-nvidia-dpf-adapter`, branch `main`. Cut a `feat/<ID>-<short>` 
   - [ ] Unit test asserts the published spec.
   - [ ] Applying twice is a no-op (server-side apply, stable field manager).
 
-### [ ] A2 — NFD rule labels BlueField-3 hosts `dpu=true`
+### [x] A2 — NFD rule labels BlueField-3 hosts `dpu=true`
 
-- **What:** Promote `config/overlays/lab/nodefeaturerule-bluefield.yaml` into the default install. Add the `dpu=true` label (the `dpu-daemon` DaemonSet selects on it) next to the existing `hardware.opiproject.org/profile=nvidia-bluefield`.
-- **Note:** If NFD is not installed, document labelling the node by hand, which is what the Intel and Marvell README already asks for.
+- **What:** The lab overlay ships a BlueField-3 NodeFeatureRule (`a2dc`/`a2dd` only). NFD stores it as `feature.node.kubernetes.io/dpu`. `pkg/nodelabel` copies that to bare `dpu=true` and never removes it. The copy waits until the configured DPUCluster is Ready and the DPUFlavor exists.
+- **Note:** Label the node by hand only when NFD is not installed.
 - **Acceptance:**
-  - [ ] On a BlueField-3 host the node gets `dpu=true` without manual steps.
-  - [ ] A host without a BlueField-3 does not.
+  - [x] On a BlueField-3 host the node gets `dpu=true` without manual steps. dh5 smoke, already provisioned. The cold start (label absent until the gate opens) is A10.
+  - [x] A host without a BlueField-3 does not. The rule matches only `a2dc`/`a2dd`.
 
-### [ ] A3 — Manager ensures the VSP DaemonSet
+### [x] A3 — Manager ensures the VSP DaemonSet
 
 - **What:** The manager (lifecycle manager) applies the VSP DaemonSet when `vendor=nvidia`, using the same image as the manager. This covers the case where PR 7 deployed only the manager. Keep `config/vsp/` as the source of the manifest.
 - **Files:** `pkg/lifecycle/`, `config/vsp/daemonset.yaml`, `config/vsp/rbac.yaml`.
 - **Acceptance:**
-  - [ ] Deleting the DaemonSet makes the manager recreate it.
-  - [ ] Removing `DpuOperatorConfig` removes it.
-  - [ ] The VSP pod mounts `/var/run/dpu-daemon` at the socket path the daemon dials.
+  - [x] Deleting the DaemonSet makes the manager recreate it. dh5, `:a2a3a8a9-2`.
+  - [ ] Removing `DpuOperatorConfig` removes it. Not run on the live card.
+  - [x] The VSP pod mounts `/var/run/dpu-daemon` at the socket path the daemon dials. Rendered by the manager; the recreated pod ran.
 
 ### [ ] A4 — VSP `Init` gated on DPF `DPU` Ready
 
@@ -296,21 +296,23 @@ Repo: `sknrao/opi-nvidia-dpf-adapter`, branch `main`. Cut a `feat/<ID>-<short>` 
   - [ ] Test: delete and recreate the CR within the grace period; the DPF `DPU` object keeps its UID.
   - [ ] Test: delete and wait past the grace period; the DPF objects go.
 
-### [ ] A8 — Remove the stand-ins
+### [x] A8 — Remove the stand-ins
 
 - **What:** Delete `cmd/opi-daemon`, `config/opi-daemon/`, and `ReportReady` in `pkg/vsp/ready.go` (it writes `Ready` on `DpuOperatorConfig`, which the operator owns). Keep the identity annotator inside the VSP process.
 - **Acceptance:**
-  - [ ] No adapter code writes the `Ready` condition on any OPI object.
-  - [ ] Build, tests, and docs no longer reference `opi-daemon`.
+  - [x] No adapter code writes the `Ready` condition on any OPI object. The condition writer is `dpu-daemon`.
+  - [x] The running DaemonSet has one container, `vsp`. dh5, `:a2a3a8a9-2`.
 
-### [ ] A9 — RBAC
+### [x] A9 — RBAC
 
 - **What:** VSP ServiceAccount: read DPF `DPU`, `DPUNode`; create, patch, delete `DPUServiceInterface` (B4); read nodes; patch `DataProcessingUnit` annotations. Manager: manage the VSP DaemonSet (A3), the default chain (B6), and SFC outputs (phase C).
 - **Files:** `config/vsp/rbac.yaml`, `config/rbac/`.
 - **Acceptance:**
-  - [ ] Least-privilege review; no wildcard verbs or resources.
+  - [x] Least-privilege review; no wildcard verbs or resources. dh5 `auth can-i` denied delete of `dataprocessingunits`, get of `secrets`, and `* *`. VSP logs had no `forbidden`.
 
 ### [ ] A10 — Phase A lab check
+
+A2, A3, A8, and A9 passed on an already-provisioned dh5. This item is the fresh install.
 
 - **Steps:** Fresh install, apply `DpuOperatorConfig` with `vendor=nvidia`, do nothing else.
 - **Acceptance:**
@@ -486,7 +488,7 @@ Repo: `sknrao/opi-nvidia-dpf-adapter`, branch `main`. Cut a `feat/<ID>-<short>` 
 
 | Feature (as Intel and Marvell provide it) | Delivered by | Status | Lab note |
 |---|---|---|---|
-| Automatic DPU detection and `DataProcessingUnit` creation | U1, U2, A1, A2 | ☐ | Detection and the daemon-created CR passed. Bare `dpu=true` is still copied by the lab script (A2). |
+| Automatic DPU detection and `DataProcessingUnit` creation | U1, U2, A1, A2 | ☑ | Detection and the daemon-created CR passed. The labeler sets bare `dpu=true` after the DPUCluster is Ready and the flavor exists. Cold-start timing is A10. |
 | Vendor plugin started per DPU | U3, A3 | ☐ | Lab VSP is `make deploy`, not started by the operator. |
 | DPU readiness on `Ready` | A4, A5, U4 | ☐ | Ready passed on the lab image, which carries the U4 patch. Upstream U4 is not open as a PR yet. |
 | `openshift.io/dpu` VF resource | B1, B2, B3 | ☑ | dh5, 2026-11-17. |
@@ -548,7 +550,7 @@ Fill in after S1–S6 run.
 | `lab-verify-parity` (Ready, default chain, `p0`, OPI CNI attach, SFC create and delete) | Pass |
 | Host VF ↔ `ping-sf` ping (`lab-milestone-02-ping`) | Pass, 3/3, `fail_mode=secure` |
 
-Still required on this k3s host, and not part of the generic product: bare `dpu=true` copied from the NFD feature label, whereabouts `v0.9.4` in both CNI directories, `dpu-daemon` `runAsUser: 0` plus hostPath mounts of `/opt/cni` and the k3s CNI dir, VSP `hostNetwork` with health port `18082`, and the U4 patch in the lab daemon image. A VSP restart still leaves Ready false until the daemon is bounced.
+Still required on this k3s host, and not part of the generic product: whereabouts `v0.9.4` in both CNI directories, `dpu-daemon` `runAsUser: 0` plus hostPath mounts of `/opt/cni` and the k3s CNI dir, VSP `hostNetwork` with health port `18082`, and the U4 patch in the lab daemon image. A VSP restart still leaves Ready false until the daemon is bounced. The labeler now sets bare `dpu=true`; the milestone script no longer copies it.
 
 ---
 
@@ -587,10 +589,7 @@ Parity on dh5 needed whereabouts in `/opt/cni/bin` and `/var/lib/rancher/k3s/dat
 
 ### A2 mechanism — bare `dpu=true` (NFD cannot emit it)
 
-A2 text still reads like “put `dpu=true` on the NFD rule.” NFD stores a slash-less key as `feature.node.kubernetes.io/dpu`. The daemon selects bare `dpu=true`. Lab copies the label in `lab-milestone-01-cluster.sh`.
-
-- **Do:** Specify the product mechanism in A2 (for example manager patches bare `dpu=true` from the feature label; hand-label only when NFD is absent). Do not tick A2 for a rule that only sets the prefixed feature label.
-- **Why:** Acceptance “without manual steps” is otherwise impossible as written.
+Done in `7e5c89c`. NFD stores a slash-less key as `feature.node.kubernetes.io/dpu`. The labeler copies that to bare `dpu=true` after the DPUCluster is Ready and the flavor exists. Hand-label only when NFD is absent. The milestone script waits for the label; it does not set it.
 
 ### Operator starts the companion (not only `make deploy`)
 
