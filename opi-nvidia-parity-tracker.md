@@ -549,3 +549,62 @@ Fill in after S1–S6 run.
 | Host VF ↔ `ping-sf` ping (`lab-milestone-02-ping`) | Pass, 3/3, `fail_mode=secure` |
 
 Still required on this k3s host, and not part of the generic product: bare `dpu=true` copied from the NFD feature label, whereabouts `v0.9.4` in both CNI directories, `dpu-daemon` `runAsUser: 0` plus hostPath mounts of `/opt/cni` and the k3s CNI dir, VSP `hostNetwork` with health port `18082`, and the U4 patch in the lab daemon image. A VSP restart still leaves Ready false until the daemon is bounced.
+
+---
+
+## Additional important items to consider
+
+Not yet assigned IDs. Promote into A/B/H/R (or upstream) when you schedule them. The main A–R list stays the plan; these are gaps that showed up from the 2026-11-17 lab and a pass over the tracker.
+
+### Daemon ↔ VSP reconnect after VSP restart
+
+Lab: after a VSP restart, `Ready` stays false until `dpu-daemon` is bounced — the daemon does not redial. A5 notes the symptom; nothing owns the fix.
+
+- **Do:** Upstream daemon redial on dial failure, and/or VSP handshake that recovers without a daemon bounce.
+- **Why:** Intel/Marvell-like ops expect Ready to return when the vendor plugin comes back.
+- **Touches:** A5 acceptance, A10 Ready checks, possibly `dpu-operator` HostSideManager.
+
+### S6 EPERM VF operations — explicit owner
+
+Spike S6: setting VF MAC and VLAN 0 succeeded; spoof check, trust, link state, and max tx rate returned `Operation not permitted`. The S6 decision says B8 needs this handled; no item describes how.
+
+- **Do:** Pick one — CNI/NAD config that skips those ops, upstream CNI/driver fix, or document as unsupported on this mlx5 path — and attach it to B8 (or a small B/S follow-up).
+- **Why:** Otherwise B8 stays open with no clear exit.
+
+### Non-OpenShift host prerequisites (k3s)
+
+Parity on dh5 needed whereabouts in `/opt/cni/bin` and `/var/lib/rancher/k3s/data/cni`, `dpu-daemon` `runAsUser: 0` plus hostPath mounts of `/opt/cni` and the k3s CNI dir, and careful Multus (`rke2-multus`). That is not a tracker ID today.
+
+- **Do:** Add something like **H4** (automate what you can) and/or hard prerequisites in R1 / the support matrix.
+- **Why:** Without it, “parity” silently assumes OpenShift-shaped CNI layout.
+
+### VSP `hostNetwork` and health port (`:8082` → `:18082`)
+
+`dpu-daemon` is hostNetwork, dials `127.0.0.1:50051`, and already binds `:8082`. Lab fixed PingFailed with VSP `hostNetwork: true` and health on `:18082`. Still lab-overlay folklore.
+
+- **Do:** Make this acceptance on **A3/A4** (or a small A item): any co-located hostNetwork VSP must use a non-clashing probe port and share the host network for Init.
+- **Why:** Product-critical on every cluster where the daemon is hostNetwork, not only dh5.
+
+### A2 mechanism — bare `dpu=true` (NFD cannot emit it)
+
+A2 text still reads like “put `dpu=true` on the NFD rule.” NFD stores a slash-less key as `feature.node.kubernetes.io/dpu`. The daemon selects bare `dpu=true`. Lab copies the label in `lab-milestone-01-cluster.sh`.
+
+- **Do:** Specify the product mechanism in A2 (for example manager patches bare `dpu=true` from the feature label; hand-label only when NFD is absent). Do not tick A2 for a rule that only sets the prefixed feature label.
+- **Why:** Acceptance “without manual steps” is otherwise impossible as written.
+
+### Operator starts the companion (not only `make deploy`)
+
+A3 is “manager ensures the VSP DaemonSet.” Lab installs the adapter with `make deploy`. R4 mentions `NvidiaDpfAdapterImage` on PR 7; there is no explicit gate that `dpu-operator` alone starts the companion.
+
+- **Do:** Add an A10 or R4 check: apply only `DpuOperatorConfig` with `vendor=nvidia` (image set on the operator); no `make deploy`; manager + VSP still come up.
+- **Why:** That is the install path the parity claim describes.
+
+### Smaller hygiene (optional)
+
+| Topic | Note |
+|---|---|
+| Product name string | A1 text says `NVIDIA BlueField-3`; lab/mapping often use `BlueField-3`. Pick one canonical value or A6 gates break. |
+| S7 | Results table is filled; tick S7 or leave a one-line “recorded” note. |
+| B7 | `Unimplemented` RPCs — cheap to close so B8 is not held on ceremony. |
+| Multi-DPU / multi-node | Fine as a non-goal for this round; say so explicitly. |
+| Uninstall / no-reflash | Optional V/R check that teardown does not reflash and does not delete shared CRDs (hybrid design already says this). |
