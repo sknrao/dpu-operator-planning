@@ -34,7 +34,7 @@ Two git repos. The local `dpu-operator` checkout is on `main`; the open PRs live
 |---|---|---|
 | [opiproject/dpu-operator](https://github.com/opiproject/dpu-operator) | `feat/vendor-provider-spi` (PR 7, open, base `main`) | U1, U2, U3, and the U1–U3 part of U6 |
 | [opiproject/dpu-operator](https://github.com/opiproject/dpu-operator) | `feat/sfc-helm-chart` (PR 8, open, base `main`) | U5, and the U5 part of U6 |
-| [opiproject/dpu-operator](https://github.com/opiproject/dpu-operator) | `fix/ready-status-merge` (does not exist yet; cut from `main`) | U4, and the U4 part of U6 |
+| [opiproject/dpu-operator](https://github.com/opiproject/dpu-operator) | `fix/ready-status-merge` (local, cut from `origin/main` `3092bcbe`; not pushed yet) | U4, and the U4 part of U6 |
 | [sknrao/opi-nvidia-dpf-adapter](https://github.com/sknrao/opi-nvidia-dpf-adapter) | `main` | A1–A9, B1–B7, C1–C6, H1–H3, V1, V2, R1, R3, R4, R5 |
 | — | no commit | S1–S6, A10, B8, C7, V3 |
 | this workspace, not a git repo | — | S7, V4, R2 |
@@ -55,7 +55,7 @@ NVIDIA DPF itself is not a repo we change.
 | U1 | `VendorProvider` detection fields | dpu-operator `feat/vendor-provider-spi` | — | ☑ | `61ad0802` pushed. Dropped `hostSideOnly` and `dedupeBy`: detection is host-side only and always dedupes by serial. `3947c115` (not pushed) vendors the fake client so the controller tests compile with `-mod=vendor`. |
 | U2 | Provider-driven detector in the daemon | dpu-operator `feat/vendor-provider-spi` | U1 | ☑ | `61ad0802` pushed |
 | U3 | Skip VSP rendering for provider-owned products | dpu-operator `feat/vendor-provider-spi` | U1 | ☑ | `61ad0802` pushed |
-| U4 | Ready-only status merge | dpu-operator `fix/ready-status-merge` | — | ☐ | new PR off `main`. Parked until PR 7 and PR 8 merge. |
+| U4 | Ready-only status merge | dpu-operator `fix/ready-status-merge` | — | ☐ | Code change is on the branch, cut from `origin/main`. Builds for linux. Unit test and push still open. Not blocked by PR 7 or PR 8. |
 | U5 | SFC reconciler skips chart network functions | dpu-operator `feat/sfc-helm-chart` | — | ☑ | `5778fcc1` pushed |
 | U6 | Upstream docs and tests for U1–U5 | same branch as the item it covers | U1–U5 | ☐ | U1–U3 docs are in `61ad0802`. U5 docs are in `5778fcc1`. U4 docs remain. |
 | A1 | Publish detection data on `VendorProvider/nvidia` | adapter `main` | U1 | ☑ | Lab 2026-11-17: daemon created `nvidia-bluefield-<serial>-host` from `spec.detection` (`15b3`, `a2dc`/`a2dd`, exclude `c2d3`, product `BlueField-3`). |
@@ -165,7 +165,7 @@ Output: `/tmp/spike-nvidia-dataplane-<stamp>.tgz` and `SUMMARY.txt`. It contains
 
 ## Phase 1 — `dpu-operator` (upstream, vendor-neutral)
 
-Repo: `opiproject/dpu-operator`. U1–U3 go on `feat/vendor-provider-spi` (PR 7). U5 goes on `feat/sfc-helm-chart` (PR 8). U4 is a new branch, `fix/ready-status-merge`, cut from `main`. None of these changes names NVIDIA, except the fallback in U2.
+Repo: `opiproject/dpu-operator`. U1–U3 go on `feat/vendor-provider-spi` (PR 7). U5 goes on `feat/sfc-helm-chart` (PR 8). U4 is a new branch, `fix/ready-status-merge`, cut from `origin/main` (`3092bcbe`). It does not depend on PR 7 or PR 8. None of these changes names NVIDIA, except the fallback in U2.
 
 ### [ ] U1 — Detection fields on `VendorProvider`
 
