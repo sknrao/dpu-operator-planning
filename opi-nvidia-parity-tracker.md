@@ -84,7 +84,7 @@ NVIDIA DPF itself is not a repo we change.
 | C6 | SFC status reporting | adapter `main` | C4 | ☑ | Parity SFC checks passed, including status. |
 | C7 | Phase C lab check | — | C1–C6, U5, B8 | ☐ | SFC section of `lab-verify-parity` passed on 2026-11-17. Left open because B8 is open. |
 | H1 | `DPUCluster` and Kamaji defaults in the lifecycle manager | adapter `main` | — | ☐ | Lab brought Kamaji up from `lab-bringup-pre-create.sh`, not from the lifecycle manager. |
-| H2 | BFB URL default | adapter `main` | — | ☐ | Lab still sets `DPU_BFB_URL` in `config/overlays/lab/pci-patch.yaml`. |
+| H2 | BFB URL default | adapter `main` | — | ☑ | `dpf.bfbURL` in `config/versions.yaml` is the manager default when `--vsp-bfb-url` is empty. The lab overlay no longer passes the flag. Same bundle already on dh5; no new flash. |
 | H3 | Kamaji kubelet-config skew handled without a manual step | adapter `main` | — | ☐ | Milestone 1 still runs `lab-strip-bf-kubelet-config` while the phase is `DPU Cluster Config`. The tenant node did reach Ready after that. |
 | V1 | Unit and conformance tests | adapter `main` | per item | ☐ | same branch as the item |
 | V2 | Lab verification scripts per phase | adapter `main` | A10, B8, C7 | ☐ | `make lab-verify-parity` passed on dh5 on 2026-11-17 (re-run). It is one script, not the three phase scripts named below. |
@@ -445,11 +445,11 @@ A2, A3, A8, and A9 passed on an already-provisioned dh5. This item is the fresh 
 - **Acceptance:**
   - [ ] Fresh cluster reaches A10 with no manual `DPUCluster`.
 
-### [ ] H2 — BFB URL default
+### [x] H2 — BFB URL default
 
 - **What:** Default the BFB URL from `config/versions.yaml` for the pinned DPF release; allow override.
 - **Acceptance:**
-  - [ ] No manual BFB URL needed for the pinned release.
+  - [x] No manual BFB URL needed for the pinned release. Empty `--vsp-bfb-url` uses `dpf.bfbURL`. The lab overlay does not set the flag.
 
 ### [ ] H3 — Kamaji kubelet-config skew
 
