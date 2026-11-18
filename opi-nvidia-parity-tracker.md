@@ -75,20 +75,20 @@ NVIDIA DPF itself is not a repo we change.
 | B5 | Interface ownership and restart reconciliation | adapter `main` | B4 | ☑ | Parity: VSP restart kept the interface still held by `parity-a`. Delete must happen before that restart; a dead dial leaks the CR. |
 | B6 | Translator default chain and `p0` interface | adapter `main` | S2, S3 | ☑ | Parity: `opi-default-<dpu>` and `opi-<dpu>-p0` existed, and the external ping from `parity-a` passed. |
 | B7 | Network function RPCs return `Unimplemented` | adapter `main` | — | ☑ | `e817280`. Create/Delete always `Unimplemented`; dead handoff removed. `TestNetworkFunctionRPCsReturnUnimplemented` passed. |
-| B8 | Phase B lab check | — | B1–B7, A10 | ☐ | Attach and ping passed inside `lab-verify-parity`. B7 is closed. Formal B8 stays open until A10. |
+| B8 | Phase B lab check | — | B1–B7, A10 | ☐ | Attach and ping passed inside `lab-verify-parity` (now `lab-verify-vf-attach`). B7 is closed. Formal B8 stays open until A10. |
 | C1 | Two service interfaces per network function | adapter `main` | S2 | ☑ | Parity SFC created the chart function's in and out interfaces. |
 | C2 | Derived `bf_sf`, remove HBN hard-coding | adapter `main` | C1 | ☑ | Same SFC. No HBN NAD in the parity path. |
 | C3 | SFC `nodeSelector` mapped to DPU nodes | adapter `main` | S2 | ☑ | The function pod ran on the tenant node for that DPU. |
 | C4 | Per-node stitched chain and swap strategy | adapter `main` | S5, B6, C1 | ☑ | Parity: applying the SFC overlaid the default chain, and deleting it restored `opi-default-<dpu>`. |
 | C5 | Network function chart contract and sample chart | adapter `main` | C1 | ☑ | Parity chart pull succeeded. Milestone 2 separately ran `ping-sf` `0.1.0`. |
 | C6 | SFC status reporting | adapter `main` | C4 | ☑ | Parity SFC checks passed, including status. |
-| C7 | Phase C lab check | — | C1–C6, U5, B8 | ☐ | SFC section of `lab-verify-parity` passed on 2026-11-17. Left open because B8 is open. |
+| C7 | Phase C lab check | — | C1–C6, U5, B8 | ☐ | SFC section passed on 2026-11-17 (`lab-verify-parity`; now `lab-verify-sfc-chain`). Left open because B8 is open. |
 | H1 | `DPUCluster` and Kamaji defaults in the lifecycle manager | adapter `main` | — | ☑ | EnsureKamaji + EnsureDPUCluster + `VendorDPUClusterReady` + lab overlay flags. Cold-path dh5 smoke is evidence-only (`docs/lab/h1-dh5-smoke.md`). |
 | H2 | BFB URL default | adapter `main` | — | ☑ | `dpf.bfbURL` in `config/versions.yaml` is the manager default when `--vsp-bfb-url` is empty. The lab overlay no longer passes the flag. Same bundle already on dh5; no new flash. |
 | H3 | Kamaji kubelet-config skew handled without a manual step | adapter `main` | — | ☑ | DPUFlavor `configFiles` install on-BF `opi-strip-kubelet-1.35.timer`. SSH `lab-strip-bf-kubelet-config` is break-glass. Prefixed cards need reflash for the timer. |
-| V1 | Unit and conformance tests | adapter `main` | per item | ☐ | same branch as the item |
-| V2 | Lab verification scripts per phase | adapter `main` | A10, B8, C7 | ☐ | `make lab-verify-parity` passed on dh5 on 2026-11-17 (re-run). It is one script, not the three phase scripts named below. |
-| V3 | Upstream e2e subset on BlueField-3 | — | C7 | ☐ | run upstream e2e; no branch unless a test has to change |
+| V1 | Unit and conformance tests | adapter `main` | per item | ☑ | Gap list `docs/lab/v1-test-coverage.md`. `make test` (CI) includes `test/conformance`. H3 `configFiles` paths asserted on host BlueField DPU emit. Lab-only A10/H3-timer/B8/C7 stay out. |
+| V2 | Lab verification scripts per phase | adapter `main` | A10, B8, C7 | ☐ | Scripts exist: `lab-verify-detection` / `vf-attach` / `sfc-chain`; `lab-verify-parity` is the runner. Writing them does not close V2 — A10/B8/C7 lab passes still open. Monolithic parity passed dh5 2026-11-17. |
+| V3 | Upstream e2e subset on BlueField-3 | — | C7 | ☐ | Inventory only until C7: `docs/lab/v3-upstream-e2e-inventory.md`. No live dh5 run yet. |
 | V4 | Feature parity matrix signed off | this file | V3 | ☐ | |
 | R1 | User documentation | adapter `main` | C7 | ☐ | Lab runbook is `docs/user-guide-lab-milestones.md`. `docs/configuration.md` separates lab values from the product. A generic install guide is still open. |
 | R2 | Correct the architecture review | this workspace, not a git repo | — | ☐ | `opi-dpf-architecture-review.html` |
@@ -470,27 +470,33 @@ A2, A3, A8, and A9 passed on an already-provisioned dh5. This item is the fresh 
 
 ## Phase 4 — Verification
 
-### [ ] V1 — Unit and conformance tests
+### [x] V1 — Unit and conformance tests
 
-- Each item above lists its tests. The conformance suite (`test/conformance`) covers every mapping change. `make test` and the conformance suite run in CI.
+- Gap list: adapter `docs/lab/v1-test-coverage.md`.
+- `make test` already includes `test/conformance` (`go list ./... | grep -v /e2e`); CI runs `make test`.
+- H3: conformance asserts host BlueField `DataProcessingUnit` emits strip script + timer `configFiles` paths (bodies stay in mapping unit tests).
+- Lab-only: A10, live H3 timer on card, B8, C7.
 
 ### [ ] V2 — Lab verification scripts
 
-- One script per phase, matching the style of `hack/lab-verify-sfc.sh` (`KUBECTL`, `ok`/`bad`, PASS/FAILED): `lab-verify-detection.sh` (A10), `lab-verify-vf-attach.sh` (B8), `lab-verify-sfc-chain.sh` (C7).
+- Scripts on adapter: `hack/lab-verify-detection.sh` (A10), `lab-verify-vf-attach.sh` (B8), `lab-verify-sfc-chain.sh` (C7); shared `hack/lib/lab-verify-common.sh`.
+- `hack/lab-verify-parity.sh` is the runner (host fixes → three phases). Makefile targets: `lab-verify-detection`, `lab-verify-vf-attach`, `lab-verify-sfc-chain`, `lab-verify-parity`.
+- V2 stays open until A10 / B8 / C7 lab passes. Detection does not create a DPU (not a fresh A10 install).
 
 ### [ ] V3 — Upstream e2e subset on BlueField-3
 
+- Inventory (no live run until C7): adapter `docs/lab/v3-upstream-e2e-inventory.md`.
 - Run the upstream `e2e_test` scenarios against the lab:
-  - [ ] webhook tests
-  - [ ] host workload pods start
-  - [ ] traffic between pods
-  - [ ] SFC creates the network function
+  - [ ] webhook tests — **skip on dh5** (mutates live `DpuOperatorConfig`)
+  - [ ] host workload pods start — already recorded via vf-attach / parity
+  - [ ] traffic between pods — run after C7
+  - [ ] SFC creates the network function — chart path recorded; do not force image NF
   - [ ] pod to pod through the function
   - [ ] pod to function
   - [ ] function to external
-  - [ ] pod to external
-  - [ ] network function deleted
-  - [ ] more SFCs than resources
+  - [ ] pod to external — host-pod external ping already in vf-attach
+  - [ ] network function deleted — chart path in sfc-chain
+  - [ ] more SFCs than resources — only when B8 in scope
 - Record which tests need an NVIDIA-specific variant (for example chart instead of image).
 
 ### [ ] V4 — Feature parity matrix
