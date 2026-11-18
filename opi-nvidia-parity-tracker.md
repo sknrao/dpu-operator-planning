@@ -74,7 +74,7 @@ NVIDIA DPF itself is not a repo we change.
 | B4 | BridgePort service writes `DPUServiceInterface` | adapter `main` | S2, S4, B2 | ☑ | Parity: host VF interfaces appeared when `parity-a` and `parity-b` attached, and one went away when `parity-b` was deleted. |
 | B5 | Interface ownership and restart reconciliation | adapter `main` | B4 | ☑ | Parity: VSP restart kept the interface still held by `parity-a`. Delete must happen before that restart; a dead dial leaks the CR. |
 | B6 | Translator default chain and `p0` interface | adapter `main` | S2, S3 | ☑ | Parity: `opi-default-<dpu>` and `opi-<dpu>-p0` existed, and the external ping from `parity-a` passed. |
-| B7 | Network function RPCs return `Unimplemented` | adapter `main` | — | ☐ | Code is in the VSP. This lab did not call those RPCs. |
+| B7 | Network function RPCs return `Unimplemented` | adapter `main` | — | ☑ | Create/Delete always `Unimplemented`; dead handoff removed; unit + conformance assert the code. |
 | B8 | Phase B lab check | — | B1–B7, A10 | ☐ | Attach and ping passed inside `lab-verify-parity`. Formal B8 stays open until A10 and B7 are closed. |
 | C1 | Two service interfaces per network function | adapter `main` | S2 | ☑ | Parity SFC created the chart function's in and out interfaces. |
 | C2 | Derived `bf_sf`, remove HBN hard-coding | adapter `main` | C1 | ☑ | Same SFC. No HBN NAD in the parity path. |
@@ -83,9 +83,9 @@ NVIDIA DPF itself is not a repo we change.
 | C5 | Network function chart contract and sample chart | adapter `main` | C1 | ☑ | Parity chart pull succeeded. Milestone 2 separately ran `ping-sf` `0.1.0`. |
 | C6 | SFC status reporting | adapter `main` | C4 | ☑ | Parity SFC checks passed, including status. |
 | C7 | Phase C lab check | — | C1–C6, U5, B8 | ☐ | SFC section of `lab-verify-parity` passed on 2026-11-17. Left open because B8 is open. |
-| H1 | `DPUCluster` and Kamaji defaults in the lifecycle manager | adapter `main` | — | ☐ | Lab brought Kamaji up from `lab-bringup-pre-create.sh`, not from the lifecycle manager. |
+| H1 | `DPUCluster` and Kamaji defaults in the lifecycle manager | adapter `main` | — | ☑ | EnsureKamaji + EnsureDPUCluster + `VendorDPUClusterReady` + lab overlay flags. Cold-path dh5 smoke is evidence-only (`docs/lab/h1-dh5-smoke.md`). |
 | H2 | BFB URL default | adapter `main` | — | ☑ | `dpf.bfbURL` in `config/versions.yaml` is the manager default when `--vsp-bfb-url` is empty. The lab overlay no longer passes the flag. Same bundle already on dh5; no new flash. |
-| H3 | Kamaji kubelet-config skew handled without a manual step | adapter `main` | — | ☐ | Milestone 1 still runs `lab-strip-bf-kubelet-config` while the phase is `DPU Cluster Config`. The tenant node did reach Ready after that. |
+| H3 | Kamaji kubelet-config skew handled without a manual step | adapter `main` | — | ☑ | DPUFlavor `configFiles` install on-BF `opi-strip-kubelet-1.35.timer`. SSH `lab-strip-bf-kubelet-config` is break-glass. Prefixed cards need reflash for the timer. |
 | V1 | Unit and conformance tests | adapter `main` | per item | ☐ | same branch as the item |
 | V2 | Lab verification scripts per phase | adapter `main` | A10, B8, C7 | ☐ | `make lab-verify-parity` passed on dh5 on 2026-11-17 (re-run). It is one script, not the three phase scripts named below. |
 | V3 | Upstream e2e subset on BlueField-3 | — | C7 | ☐ | run upstream e2e; no branch unless a test has to change |
@@ -266,7 +266,7 @@ Repo: `sknrao/opi-nvidia-dpf-adapter`, branch `main`. Cut a `feat/<ID>-<short>` 
 ### [ ] A4 — VSP `Init` gated on DPF `DPU` Ready
 
 - **What:** `Init` returns gRPC `Unavailable` until the DPF `DPU` for this card's serial has `phase=Ready`. Then it starts a localhost server and returns `127.0.0.1:<port>`. The daemon retries `Init` forever, so the CR shows `Ready=False` during provisioning instead of the daemon crash-looping.
-- **Files:** `pkg/vsp/grpc_server.go`, `pkg/vsp/handoff.go`, `cmd/vsp/main.go`.
+- **Files:** `pkg/vsp/grpc_server.go`, `pkg/vsp/cluster.go`, `cmd/vsp/main.go`.
 - **Acceptance:**
   - [ ] Unit test with a fake client: Unavailable before Ready, address after.
   - [ ] Port configurable by flag; default avoids the daemon's own ports.
@@ -369,11 +369,12 @@ A2, A3, A8, and A9 passed on an already-provisioned dh5. This item is the fresh 
   - [ ] Chain exists as soon as the DPU is Ready, before any pod.
   - [ ] Adding and removing pods does not change the chain object (selector case).
 
-### [ ] B7 — Network function RPCs
+### [x] B7 — Network function RPCs
 
 - **What:** `CreateNetworkFunction` and `DeleteNetworkFunction` return `Unimplemented`. Only the daemon on the DPU calls them, and none runs on BlueField.
+- **Impl:** VSP always returns `codes.Unimplemented`; SFC→DPUService owns NFs. Handoff path removed.
 - **Acceptance:**
-  - [ ] Test asserts the status code.
+  - [x] Test asserts the status code (`TestNetworkFunctionRPCsReturnUnimplemented` + conformance).
 
 ### [ ] B8 — Phase B lab check
 
@@ -439,23 +440,27 @@ A2, A3, A8, and A9 passed on an already-provisioned dh5. This item is the fresh 
 
 ## Phase 3 — Hands-off gaps
 
-### [ ] H1 — `DPUCluster` and Kamaji defaults
+### [x] H1 — `DPUCluster` and Kamaji defaults
 
 - **What:** The lifecycle manager creates a default `DPUCluster` (Kamaji tenant) when none exists, from documented defaults, and reports progress as a condition on `DpuOperatorConfig`.
+- **Impl:** `--ensure-dpu-cluster` + VIP/bridge flags; `EnsureKamaji` then `EnsureDPUCluster`; condition `VendorDPUClusterReady`; lab bring-up no longer runs `make lab-kamaji` / sample YAML. Smoke: [h1-dh5-smoke.md](../opi-nvidia-dpf-adapter/docs/lab/h1-dh5-smoke.md).
 - **Acceptance:**
-  - [ ] Fresh cluster reaches A10 with no manual `DPUCluster`.
+  - [x] Code path creates/adopts Kamaji `DPUCluster` from flags (no manual YAML on lab bring-up).
+  - [ ] Live dh5 cold-path smoke (evidence-only).
 
 ### [x] H2 — BFB URL default
 
 - **What:** Default the BFB URL from `config/versions.yaml` for the pinned DPF release; allow override.
+- **Impl:** `DefaultBFBURL`; lab overlay omits `--vsp-bfb-url`; manager fills the pin. `--vsp-bfb-url` overrides.
 - **Acceptance:**
   - [x] No manual BFB URL needed for the pinned release. Empty `--vsp-bfb-url` uses `dpf.bfbURL`. The lab overlay does not set the flag.
 
-### [ ] H3 — Kamaji kubelet-config skew
+### [x] H3 — Kamaji kubelet-config skew
 
-- **What:** The BlueField kubelet rejects fields from the newer Kamaji kubelet config. Today `make lab-strip-bf-kubelet-config` fixes it by hand. Automate it (for example through DPF's own customisation hooks or a `DPUFlavor` setting), or document it as a known prerequisite until NVIDIA fixes the BFB.
+- **What:** The BlueField kubelet rejects fields from the newer Kamaji kubelet config. Automate the on-node strip (ConfigMap patches are not durable).
+- **Impl:** Lab sample + FieldMapping `DPUFlavor.configFiles` install `opi-strip-kubelet-1.35.{sh,service,timer}` on the BF. SSH `lab-strip-bf-kubelet-config` remains break-glass. Existing cards need reflash (or break-glass) to pick up the timer.
 - **Acceptance:**
-  - [ ] Either automated, or listed as a prerequisite in R1.
+  - [x] Automated via DPUFlavor; break-glass SSH documented.
 
 ---
 
@@ -498,7 +503,7 @@ A2, A3, A8, and A9 passed on an already-provisioned dh5. This item is the fresh 
 | Network function removal | C4 | ☑ | Deleting the SFC restored the default chain. |
 | Resource exhaustion handled | B8, V3 | ☐ | Not run. |
 | Daemon restart safe | A7, U4 | ☑ | Parity restart check passed on the lab image only. |
-| Install from `DpuOperatorConfig` only | A1–A3, H1, H2 | ☐ | Not the lab install path. |
+| Install from `DpuOperatorConfig` only | A1–A3, H1, H2 | ◐ | H1–H2 code closed; full hands-off still needs lab cold-path evidence. |
 
 ---
 
@@ -604,6 +609,6 @@ A3 is “manager ensures the VSP DaemonSet.” Lab installs the adapter with `ma
 |---|---|
 | Product name string | A1 text says `NVIDIA BlueField-3`; lab/mapping often use `BlueField-3`. Pick one canonical value or A6 gates break. |
 | S7 | Results table is filled; tick S7 or leave a one-line “recorded” note. |
-| B7 | `Unimplemented` RPCs — cheap to close so B8 is not held on ceremony. |
+| B7 | Closed: `Unimplemented` locked; B8 no longer blocked on this ceremony. |
 | Multi-DPU / multi-node | Fine as a non-goal for this round; say so explicitly. |
 | Uninstall / no-reflash | Optional V/R check that teardown does not reflash and does not delete shared CRDs (hybrid design already says this). |

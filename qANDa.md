@@ -15,7 +15,7 @@ I compared the adapter against upstream `opiproject/dpu-operator` `main` (commit
 
 | Area | Intel / Marvell | NVIDIA adapter |
 |---|---|---|
-| VSP data path | Real VF and bridge-port work | `BridgePortService` is not registered anywhere in the adapter. `SetNumVfs` is a no-op echo. `CreateNetworkFunction` only checks that a `DPUService` exists. The adapter's own `docs/cleanup-backlog.md` says these "return success without performing work". |
+| VSP data path | Real VF and bridge-port work | `SetNumVfs` is observe-only (no `sriov_numvfs` write). `CreateNetworkFunction` / `DeleteNetworkFunction` return `Unimplemented` (B7); NFs come from `ServiceFunctionChain`. |
 | Daemon | Real `dpu-daemon` (device plugin, CNI, SFC reconciler) | In the lab snapshot the `dpu-daemon` DaemonSet has 0 pods scheduled. The adapter ships a stand-in `opi-daemon` that only does `Init`/`GetDevices` and writes `Ready`. |
 | DPU detection | Auto-detected, both sides | Upstream has no NVIDIA detector. The `DataProcessingUnit` is applied by hand with a hand-edited `nodeName`, host side only. The `discovery.opiproject.org/product-name` annotation is invented by the adapter, not upstream. |
 | SFC semantics | `image` creates an NF pod | The mapping skips image-only network functions. It needs a Helm `chart` field that exists only in unmerged PR #8, so on upstream `main` an SFC produces nothing. |
