@@ -55,9 +55,9 @@ NVIDIA DPF itself is not a repo we change.
 | U1 | `VendorProvider` detection fields | dpu-operator `feat/vendor-provider-spi` | — | ☑ | `61ad0802` pushed. Dropped `hostSideOnly` and `dedupeBy`: detection is host-side only and always dedupes by serial. `3947c115` (not pushed) vendors the fake client so the controller tests compile with `-mod=vendor`. |
 | U2 | Provider-driven detector in the daemon | dpu-operator `feat/vendor-provider-spi` | U1 | ☑ | `61ad0802` pushed |
 | U3 | Skip VSP rendering for provider-owned products | dpu-operator `feat/vendor-provider-spi` | U1 | ☑ | `61ad0802` pushed |
-| U4 | Ready-only status merge | dpu-operator `fix/ready-status-merge` | — | ☐ | [PR 9](https://github.com/opiproject/dpu-operator/pull/9) is open at `66701745`. DCO is green. `syncSingleDpuCR` writes only `Ready`. The unit test is not in the PR. Not blocked by PR 7 or PR 8. |
+| U4 | Ready-only status merge | dpu-operator `fix/ready-status-merge` | — | ☐ | [PR 9](https://github.com/opiproject/dpu-operator/pull/9) is `66701745` (Ready-only write). The unit tests and README paragraph are local only, `f3882b5d`, not pushed. They compile for linux and have not been executed on this Windows host. |
 | U5 | SFC reconciler skips chart network functions | dpu-operator `feat/sfc-helm-chart` | — | ☑ | `5778fcc1` pushed |
-| U6 | Upstream docs and tests for U1–U5 | same branch as the item it covers | U1–U5 | ☐ | U1–U3 detection and plugin-ownership text is in `doc/vendor-provider-spi.md` (`61ad0802`). U5 chart-skip test is in `5778fcc1`. Still open: the U4 condition-ownership paragraph, the U4 unit test, and maintainer review. PRs 7, 8, and 9 show DCO only. |
+| U6 | Upstream docs and tests for U1–U5 | same branch as the item it covers | U1–U5 | ☐ | U1–U3 text is in `doc/vendor-provider-spi.md` (`61ad0802`). U5 chart-skip test is in `5778fcc1`. The U4 condition-ownership paragraph is in local commit `f3882b5d` on `fix/ready-status-merge` (not pushed). That file is not on the SPI branch, so it is not in `doc/vendor-provider-spi.md`. Maintainer review is still open. PRs 7, 8, and 9 show DCO only. |
 | A1 | Publish detection data on `VendorProvider/nvidia` | adapter `main` | U1 | ☑ | Lab 2026-11-17: daemon created `nvidia-bluefield-<serial>-host` from `spec.detection` (`15b3`, `a2dc`/`a2dd`, exclude `c2d3`, product `BlueField-3`). |
 | A2 | NFD rule labels BlueField-3 hosts `dpu=true` | adapter `main` | S6 | ☑ | `7e5c89c`. Labeler copies `feature.node.kubernetes.io/dpu=true` to bare `dpu=true` and never removes it. Rule matches only `a2dc`/`a2dd`. Lab overlay ships the rule. Gate holds the label until `dpu-cluster-1` is Ready and `dpf-lab-ovs-flavor` exists. dh5 smoke on an already-provisioned host (`:a2a3a8a9-2`): `dpu=true` on the BlueField-3 host. The absent-to-present timing was not run (A10). |
 | A3 | Manager ensures the VSP DaemonSet | adapter `main` | U3 | ☑ | `3eeefc0`, SA fix `e5e659d`. dh5: owner is `DpuOperatorConfig`, DaemonSet came back after delete, args carry the flavor and BFB URL. ServiceAccount is `opi-nvidia-dpf-adapter-nvidia-vsp` (kustomize namePrefix). Deleting `DpuOperatorConfig` was not run. |
@@ -67,7 +67,7 @@ NVIDIA DPF itself is not a repo we change.
 | A7 | Annotation ownership and delayed delete | adapter `main` | — | ☑ | Parity: daemon restart kept the DPF `DPU` uid and `DPFReady`. The lab daemon image includes the U4 patch. Upstream U4 is still open. |
 | A8 | Remove `opi-daemon` and `ReportReady` | adapter `main` | A4, A5 | ☑ | `3eeefc0`. dh5 DaemonSet has one container, `vsp`. Writer is `dpu-daemon`. |
 | A9 | VSP and manager RBAC | adapter `main` | A3, B4 | ☑ | `3eeefc0`. dh5 `kubectl auth can-i` as the VSP ServiceAccount denied delete of `dataprocessingunits`, get of `secrets`, and wildcard access. VSP logs had no `forbidden`. |
-| A10 | Phase A lab check | — | A1–A9, U1–U4 | ☐ | A2, A3, A8, and A9 passed on an already-provisioned dh5 (`:a2a3a8a9-2`). Still open: a fresh install where `dpu=true` appears only after the gate opens. U4 [PR 9](https://github.com/opiproject/dpu-operator/pull/9) is open and DCO is green; its unit test is still missing. |
+| A10 | Phase A lab check | — | A1–A9, U1–U4 | ☐ | A2, A3, A8, and A9 passed on an already-provisioned dh5 (`:a2a3a8a9-2`). Still open: a fresh install where `dpu=true` appears only after the gate opens. U4 [PR 9](https://github.com/opiproject/dpu-operator/pull/9) is open at `66701745`. The unit test is local commit `f3882b5d` and has not been pushed or executed yet. |
 | B1 | VF pool definition | adapter `main` | S1 | ☑ | Lab attach used PF0 VFs above VF0. `openshift.io/dpu` was allocatable (45 on the first passing bring-up). |
 | B2 | `GetDevices` returns VF PCI addresses | adapter `main` | B1 | ☑ | Pods scheduled on `openshift.io/dpu` and got a `net1`. |
 | B3 | `SetNumVfs` verifies, never writes | adapter `main` | B1 | ☑ | No lab step writes `sriov_numvfs`. Pool size matched the existing firmware VFs. |
@@ -211,7 +211,7 @@ Repo: `opiproject/dpu-operator`. U1–U3 go on `feat/vendor-provider-spi` (PR 7)
 
 ### [ ] U4 — Ready-only status merge
 
-The write is in [PR 9](https://github.com/opiproject/dpu-operator/pull/9) (`66701745`). DCO is green. The acceptance tests below are not in that commit, so this item stays open.
+The write is in [PR 9](https://github.com/opiproject/dpu-operator/pull/9) (`66701745`). Local commit `f3882b5d` (not pushed) adds the tests below and the README paragraph. The tests have not been executed here, so the checkboxes stay open.
 
 - **What:** In `syncSingleDpuCR` (`internal/daemon/daemon.go`), replace `currentDpuCR.Status = dpuCR.Status` with `meta.SetStatusCondition` for the `Ready` condition only. Leave other conditions untouched.
 - **Why:** The current write erases conditions owned by other writers (`DPFReady`, `DPFHardwareCompatible`). This is a bug for every vendor.
@@ -229,7 +229,7 @@ The write is in [PR 9](https://github.com/opiproject/dpu-operator/pull/9) (`6670
 
 ### [ ] U6 — Upstream docs and tests
 
-U1–U3 detection and plugin ownership are already in `doc/vendor-provider-spi.md`. The U5 chart-skip unit test is on `feat/sfc-helm-chart`. This item stays open: `fix/ready-status-merge` has no condition-ownership paragraph and no unit test, and PRs 7, 8, and 9 have no maintainer review.
+U1–U3 detection and plugin ownership are already in `doc/vendor-provider-spi.md`. The U5 chart-skip unit test is on `feat/sfc-helm-chart`. The U4 paragraph is in local commit `f3882b5d` (not pushed) because `doc/vendor-provider-spi.md` is not on `fix/ready-status-merge`. This item stays open until that test has been run and PR 7 has a maintainer review.
 
 - **What:** Update `doc/vendor-provider-spi.md` with the detection contract, the plugin-ownership rule from U3, and the condition-ownership rule from U4. Add the unit tests listed above.
 - **Acceptance:**
@@ -499,7 +499,7 @@ A2, A3, A8, and A9 passed on an already-provisioned dh5. This item is the fresh 
 |---|---|---|---|
 | Automatic DPU detection and `DataProcessingUnit` creation | U1, U2, A1, A2 | ☑ | Detection and the daemon-created CR passed. The labeler sets bare `dpu=true` after the DPUCluster is Ready and the flavor exists. Cold-start timing is A10. |
 | Vendor plugin started per DPU | U3, A3 | ☐ | Lab VSP is `make deploy`, not started by the operator. |
-| DPU readiness on `Ready` | A4, A5, U4 | ☐ | Ready passed on the lab image, which carries the U4 patch. Upstream [PR 9](https://github.com/opiproject/dpu-operator/pull/9) is open; the unit test is not in it. |
+| DPU readiness on `Ready` | A4, A5, U4 | ☐ | Ready passed on the lab image, which carries the U4 patch. Upstream [PR 9](https://github.com/opiproject/dpu-operator/pull/9) is the Ready-only write. The unit test is local commit `f3882b5d` and has not been pushed or executed yet. |
 | `openshift.io/dpu` VF resource | B1, B2, B3 | ☑ | dh5, 2026-11-17. |
 | Pod attach through `default-sriov-net` and the OPI CNI | B4, B5, S6 | ☑ | `parity-a` and `parity-b` Ready. Needs whereabouts and the daemon CNI hostPaths on k3s. |
 | Pod to pod and pod to external traffic | B6 | ☑ | External ping from `parity-a` passed. Milestone 2 host↔DPU ping also passed. |
