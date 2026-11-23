@@ -4,7 +4,7 @@ Order: U6, then A10, then B8, then C7.
 
 U6 is git and a unit test. A10 installs an OS and reboots the x86 host. B8 and C7 run only after a DPF `DPU` is already Ready. They do not reflash and they do not delete a `DPU`.
 
-Run the lab sections on the x86 host as root. After `sudo -i`, home is `/root`. Clone into `/root` if the trees are not already there. Run the commit in a normal terminal. A commit made by the Cursor agent adds `Co-authored-by: Cursor`.
+Run the lab sections on the x86 host as root. After `sudo -i`, home is `/root`. Clone into `/root` if the trees are not already there. Make commits from a normal terminal, not from the Cursor agent. The agent's commit path adds `Co-authored-by: Cursor`, which the maintainers do not want on these commits.
 
 Tick an item only after the command in its "Pass" section succeeds.
 
@@ -79,59 +79,26 @@ git rev-parse --abbrev-ref HEAD
 
 The branch must be `feat/vendor-provider-spi`.
 
-```bash
-cd /root/dpu-operator
-python3 - <<'PY'
-from pathlib import Path
-p = Path("doc/vendor-provider-spi.md")
-text = p.read_text()
-anchor = "Intel and Marvell keep the in-tree VSP pod.\n"
-paragraph = (
-    "\n"
-    "The daemon owns only the `Ready` condition on a `DataProcessingUnit`. "
-    "Each status sync sets or removes that condition and leaves every other "
-    "condition as it is, so a vendor adapter keeps the conditions it writes. "
-    "When `Ready` is already unchanged, the daemon does not write status.\n"
-)
-if "The daemon owns only the `Ready` condition" in text:
-    print("paragraph already present")
-elif anchor not in text:
-    raise SystemExit("anchor not found in doc/vendor-provider-spi.md")
-else:
-    p.write_text(text.replace(anchor, anchor + paragraph, 1))
-    print("paragraph inserted")
-PY
-git diff -- doc/vendor-provider-spi.md
-```
-
-The diff must be that one paragraph and nothing else.
+The paragraph and its commit are already done, made by you from a normal terminal as `ae60e0b0`. Do not run the edit or the commit again. Confirm the commit:
 
 ```bash
 cd /root/dpu-operator
-git add -- doc/vendor-provider-spi.md
-git commit -m "$(cat <<'EOF'
-Document that the daemon writes only the Ready condition
-
-Vendor adapters keep the conditions they own across a daemon status sync.
-
-Signed-off-by: Sridhar K N Rao <srao@linuxfoundation.org>
-EOF
-)"
 git log -1 --format='%H%n%an <%ae>%n%B'
+git show --stat HEAD
 git status -sb
 ```
 
-`git log -1` must show `Signed-off-by: Sridhar K N Rao <srao@linuxfoundation.org>` and must not show `Co-authored-by`. If the trailer is present, do not push. Reset that commit and create it again from a normal shell:
+Pass:
 
-```bash
-cd /root/dpu-operator
-git reset --soft HEAD~1
-git status -sb
-```
+- `HEAD` is `ae60e0b0` (the full hash starts with `ae60e0b0`).
+- The message is `Document that the daemon writes only the Ready condition`, then `Signed-off-by: Sridhar K N Rao <srao@linuxfoundation.org>`.
+- The message does not contain `Co-authored-by`.
+- `git show --stat HEAD` lists only `doc/vendor-provider-spi.md`, with 5 insertions.
+- `git status -sb` shows no modified files.
 
-Then run the `git commit` command above again from that shell.
+If any of those fail, stop. Do not push. Tell the person running the lab that the commit needs to be redone from a normal terminal.
 
-Push only after the log is clean:
+Push only after the confirmation passes:
 
 ```bash
 cd /root/dpu-operator

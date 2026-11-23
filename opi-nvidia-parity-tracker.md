@@ -55,7 +55,7 @@ NVIDIA DPF itself is not a repo we change.
 | U1 | `VendorProvider` detection fields | dpu-operator `feat/vendor-provider-spi` | — | ☑ | `61ad0802` pushed. Dropped `hostSideOnly` and `dedupeBy`: detection is host-side only and always dedupes by serial. `3947c115` (not pushed) vendors the fake client so the controller tests compile with `-mod=vendor`. |
 | U2 | Provider-driven detector in the daemon | dpu-operator `feat/vendor-provider-spi` | U1 | ☑ | `61ad0802` pushed |
 | U3 | Skip VSP rendering for provider-owned products | dpu-operator `feat/vendor-provider-spi` | U1 | ☑ | `61ad0802` pushed |
-| U4 | Ready-only status merge | dpu-operator `fix/ready-status-merge` | — | ☐ | [PR 9](https://github.com/opiproject/dpu-operator/pull/9) is `66701745` (Ready-only write). The unit tests and README paragraph are local only, `f3882b5d`, not pushed. They compile for linux and have not been executed on this Windows host. |
+| U4 | Ready-only status merge | dpu-operator `fix/ready-status-merge` | — | ☐ | [PR 9](https://github.com/opiproject/dpu-operator/pull/9) head is `f3882b5d`: the Ready-only write, the two unit tests, and the README paragraph. `TestSyncSingleDpuCR` passed on Linux. |
 | U5 | SFC reconciler skips chart network functions | dpu-operator `feat/sfc-helm-chart` | — | ☑ | `5778fcc1` pushed |
 | U6 | Upstream docs and tests for U1–U5 | same branch as the item it covers | U1–U5 | ☐ | U1–U3 text is in `doc/vendor-provider-spi.md` (`61ad0802`). U5 chart-skip test is in `5778fcc1`. The U4 condition-ownership paragraph is in local commit `f3882b5d` on `fix/ready-status-merge` (not pushed). That file is not on the SPI branch, so it is not in `doc/vendor-provider-spi.md`. Maintainer review is still open. PRs 7, 8, and 9 show DCO only. |
 | A1 | Publish detection data on `VendorProvider/nvidia` | adapter `main` | U1 | ☑ | Lab 2026-11-17: daemon created `nvidia-bluefield-<serial>-host` from `spec.detection` (`15b3`, `a2dc`/`a2dd`, exclude `c2d3`, product `BlueField-3`). |
@@ -244,7 +244,7 @@ Repo: `sknrao/opi-nvidia-dpf-adapter`, branch `main`. Cut a `feat/<ID>-<short>` 
 
 ### [ ] A1 — Publish detection data on `VendorProvider/nvidia`
 
-- **What:** `EnsureVendorProviderNVIDIA` writes `spec.detection`: vendor `15b3`, device IDs `a2dc`, `a2dd`, exclude `c2d3`, product `NVIDIA BlueField-3`, platform `nvidia-bluefield`, dedupe by serial, host side only.
+- **What:** `EnsureVendorProviderNVIDIA` writes `spec.detection`: vendor `15b3`, device IDs `a2dc`, `a2dd`, exclude `c2d3`, product `BlueField-3`, platform `nvidia-bluefield`, dedupe by serial, host side only.
 - **Files:** `pkg/lifecycle/vendor_provider.go`, `pkg/lifecycle/vendor_provider_test.go`.
 - **Acceptance:**
   - [ ] Unit test asserts the published spec.
@@ -571,16 +571,17 @@ Not yet assigned IDs. Promote into A/B/H/R (or upstream) when you schedule them.
 
 Lab: after a VSP restart, `Ready` stays false until `dpu-daemon` is bounced — the daemon does not redial. A5 notes the symptom; nothing owns the fix.
 
-- **Do:** Upstream daemon redial on dial failure, and/or VSP handshake that recovers without a daemon bounce.
-- **Why:** Intel/Marvell-like ops expect Ready to return when the vendor plugin comes back.
-- **Touches:** A5 acceptance, A10 Ready checks, possibly `dpu-operator` HostSideManager.
+- **Cause (found 2026-11-23):** the NVIDIA VSP opened its TCP listener (Ping and BridgePort, port 50051) only inside `Init`. The daemon calls `Init` once and keeps one connection to that address. After a VSP restart the listener was gone and nothing called `Init` again. The daemon's gRPC connection does redial the same address by itself.
+- **Fix:** adapter side. `pkg/vsp/grpc_server.go` `Start` opens the data-plane listener with the process. Test `TestDataPlaneAnswersPingBeforeInitAndAfterRestart` fails without the change and passes with it. Not yet committed. Needs a lab check: restart the VSP pod and see `Ready` return without bouncing `dpu-daemon`.
+- **Not done in the upstream daemon, on purpose:** a daemon re-`Init` would run Marvell's `doInit` and NetSec's comm-channel and DPU-side setup again after any ping outage. That cannot be tested here and could change Intel and Marvell behavior. Revisit only if the lab check fails.
+- **Touches:** A5 acceptance, A10 Ready checks.
 
 ### S6 EPERM VF operations — explicit owner
 
 Spike S6: setting VF MAC and VLAN 0 succeeded; spoof check, trust, link state, and max tx rate returned `Operation not permitted`. The S6 decision says B8 needs this handled; no item describes how.
 
-- **Do:** Pick one — CNI/NAD config that skips those ops, upstream CNI/driver fix, or document as unsupported on this mlx5 path — and attach it to B8 (or a small B/S follow-up).
-- **Why:** Otherwise B8 stays open with no clear exit.
+- **Decision 2026-11-23:** skip the operations and document them as unsupported. `dpu-cni` applies spoofchk, trust, link_state, min_tx_rate, and max_tx_rate only when the attach NAD sets them, and `default-sriov-net` sets none, so no CNI code changes. Done in the adapter: `docs/configuration.md` has a "Not supported on BlueField-3" section, and `hack/lab-verify-vf-attach.sh` fails if the NAD sets any of the five. Not yet committed. The spike probed the operations with `ip link`, not through the CNI, and the 2026-11-17 attach passed with this NAD.
+- **Remaining for B8:** `dpu-cni` must be installed on the x86 node. `lab-verify-vf-attach` checks that.
 
 ### Non-OpenShift host prerequisites (k3s)
 
@@ -611,7 +612,7 @@ A3 is “manager ensures the VSP DaemonSet.” Lab installs the adapter with `ma
 
 | Topic | Note |
 |---|---|
-| Product name string | A1 text says `NVIDIA BlueField-3`; lab/mapping often use `BlueField-3`. Pick one canonical value or A6 gates break. |
+| Product name string | Decided 2026-11-23: `BlueField-3`. The adapter publishes it, the mapping gates on it, and the lab passed with it. The PR 7 doc example is corrected to match (commit pending in `dpu-operator-pr7`). Unit-test fixtures in PR 7 still use `NVIDIA BlueField-3` as an arbitrary string. |
 | S7 | Results table is filled; tick S7 or leave a one-line “recorded” note. |
 | B7 | Closed: `Unimplemented` locked; B8 no longer blocked on this ceremony. |
 | Multi-DPU / multi-node | Fine as a non-goal for this round; say so explicitly. |
